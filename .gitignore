@@ -62,7 +62,6 @@ replay_pid*
 # Build tools and caches
 .gradle/
 build/
-out/
 bin/
 .cache/
 .parcel-cache/
