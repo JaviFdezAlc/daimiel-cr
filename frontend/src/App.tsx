@@ -1,0 +1,1124 @@
+import { Calendar, UserRound, ArrowRightLeft } from 'lucide-react'
+import { type CSSProperties, type PointerEvent, useMemo, useRef, useState } from 'react'
+
+type Sponsor = {
+  name: string
+}
+
+type ActiveView = 'home' | 'search' | 'publish'
+type SortKey = 'earliest' | 'price' | 'duration'
+
+type PublishDraft = {
+  origin: string
+  destination: string
+  date: string
+  dateKey: string
+  time: string
+  seats: number
+  price: string
+}
+
+type Trip = {
+  id: number
+  departureTime: string
+  arrivalTime: string
+  duration: string
+  durationMinutes: number
+  from: string
+  to: string
+  driver: string
+  driverAvatarUrl: string
+  rating: string
+  price: number
+  priceLabel: string
+  seats: number
+  verified: boolean
+  dayOffsets: number[]
+  tags: string[]
+}
+
+const sponsors: Sponsor[] = [
+  { name: 'Plaza Mayor' },
+  { name: 'Taller El Carmen' },
+  { name: 'Cervantes' },
+  { name: 'La Vega' },
+  { name: 'Autoescuela Daimiel' },
+  { name: 'Casa Azuer' },
+  { name: 'Tablas Cafe' },
+  { name: 'Ruta 430' },
+]
+
+const sponsorLoop = [...sponsors, ...sponsors]
+
+const trips: Trip[] = [
+  {
+    id: 1,
+    departureTime: '07:15',
+    arrivalTime: '07:48',
+    duration: '33 min',
+    durationMinutes: 33,
+    from: 'Daimiel centro',
+    to: 'Ciudad Real AVE',
+    driver: 'Lucia',
+    driverAvatarUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=96&h=96&q=80',
+    rating: '4,9',
+    price: 4.8,
+    priceLabel: '4,80 EUR',
+    seats: 2,
+    verified: true,
+    dayOffsets: [0, 1, 2],
+    tags: ['Reserva rapida', '2 plazas'],
+  },
+  {
+    id: 2,
+    departureTime: '07:40',
+    arrivalTime: '08:18',
+    duration: '38 min',
+    durationMinutes: 38,
+    from: 'Estacion de Daimiel',
+    to: 'Campus Ciudad Real',
+    driver: 'Mario',
+    driverAvatarUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=96&h=96&q=80',
+    rating: '5',
+    price: 3.9,
+    priceLabel: '3,90 EUR',
+    seats: 1,
+    verified: false,
+    dayOffsets: [0],
+    tags: ['Economico', '1 plaza'],
+  },
+  {
+    id: 3,
+    departureTime: '08:05',
+    arrivalTime: '08:39',
+    duration: '34 min',
+    durationMinutes: 34,
+    from: 'Daimiel norte',
+    to: 'Hospital General',
+    driver: 'Ana',
+    driverAvatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=96&h=96&q=80',
+    rating: '4,8',
+    price: 5.2,
+    priceLabel: '5,20 EUR',
+    seats: 3,
+    verified: true,
+    dayOffsets: [0, 2],
+    tags: ['Verificado', 'Max. 2 atras'],
+  },
+  {
+    id: 4,
+    departureTime: '14:20',
+    arrivalTime: '14:55',
+    duration: '35 min',
+    durationMinutes: 35,
+    from: 'Plaza de Espana',
+    to: 'Ciudad Real centro',
+    driver: 'Ruben',
+    driverAvatarUrl: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=96&h=96&q=80',
+    rating: '4,7',
+    price: 4.4,
+    priceLabel: '4,40 EUR',
+    seats: 2,
+    verified: true,
+    dayOffsets: [0, 1],
+    tags: ['Aire acondicionado', '2 plazas'],
+  },
+  {
+    id: 5,
+    departureTime: '18:10',
+    arrivalTime: '18:46',
+    duration: '36 min',
+    durationMinutes: 36,
+    from: 'Daimiel sur',
+    to: 'Puerta de Toledo',
+    driver: 'Carmen',
+    driverAvatarUrl: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=96&h=96&q=80',
+    rating: '5',
+    price: 4.2,
+    priceLabel: '4,20 EUR',
+    seats: 4,
+    verified: false,
+    dayOffsets: [1, 3],
+    tags: ['Flexible', '4 plazas'],
+  },
+]
+
+const publishSteps = ['Ruta', 'Fecha', 'Hora', 'Plazas', 'Precio', 'Resumen']
+const weekDays = ['Dom', 'Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab']
+const monthNames = [
+  'enero',
+  'febrero',
+  'marzo',
+  'abril',
+  'mayo',
+  'junio',
+  'julio',
+  'agosto',
+  'septiembre',
+  'octubre',
+  'noviembre',
+  'diciembre',
+]
+const today = new Date(2026, 5, 25)
+const calendarMinMonth = new Date(today.getFullYear(), today.getMonth(), 1)
+const publishPriceOptions = ['3,50', '4,00', '4,50', '5,00']
+const initialPublishDraft: PublishDraft = {
+  origin: 'Daimiel',
+  destination: 'Ciudad Real',
+  date: '25 junio',
+  dateKey: '2026-06-25',
+  time: '07:30',
+  seats: 2,
+  price: '4,00',
+}
+
+const getDateKey = (date: Date) =>
+  `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+
+const getReadableDate = (date: Date) => `${date.getDate()} ${monthNames[date.getMonth()]}`
+
+const getMonthLabel = (date: Date) => {
+  const month = monthNames[date.getMonth()]
+
+  return `${month.charAt(0).toUpperCase()}${month.slice(1)}`
+}
+
+const getCalendarMonth = (date: Date) => {
+  const year = date.getFullYear()
+  const month = date.getMonth()
+  const daysInMonth = new Date(year, month + 1, 0).getDate()
+
+  return {
+    key: `${year}-${month}`,
+    label: getMonthLabel(date),
+    year,
+    month,
+    startOffset: new Date(year, month, 1).getDay(),
+    days: Array.from({ length: daysInMonth }, (_, index) => new Date(year, month, index + 1)),
+  }
+}
+
+const addMonths = (date: Date, amount: number) => new Date(date.getFullYear(), date.getMonth() + amount, 1)
+
+const isBeforeMonth = (date: Date, compareDate: Date) =>
+  date.getFullYear() < compareDate.getFullYear() ||
+  (date.getFullYear() === compareDate.getFullYear() && date.getMonth() < compareDate.getMonth())
+
+const getDateFromKey = (dateKey: string) => {
+  const [year, month, day] = dateKey.split('-').map(Number)
+
+  return new Date(year, month - 1, day)
+}
+
+const getDayOffset = (dateKey: string, baseDateKey: string) => {
+  const millisecondsPerDay = 24 * 60 * 60 * 1000
+
+  return Math.round((getDateFromKey(dateKey).getTime() - getDateFromKey(baseDateKey).getTime()) / millisecondsPerDay)
+}
+
+const BrandIcon = () => (
+  <svg aria-hidden="true" viewBox="0 0 842 815" focusable="false">
+    <path
+      d="M378.642 0.47644C376.977 0.68457 370.42 1.41302 364.072 2.03741C319.532 6.40826 271.869 19.6248 230.346 39.1893C204.954 51.053 171.444 71.8664 148.654 89.9741C134.084 101.526 100.367 135.347 88.5029 150.229C42.5053 207.986 12.2218 279.48 2.95983 352.119C-0.786584 381.674 -0.994718 422.26 2.43949 455.145C10.1404 527.888 40.1117 601.671 86.5256 661.614C154.273 749.03 256.987 804.498 368.651 813.76C386.967 815.321 427.865 814.384 444.204 812.095C480.627 807.1 509.142 799.607 542.027 786.39C560.239 779.106 586.672 766.097 599.784 757.98C606.756 753.609 609.878 752.256 613 752.256C615.186 752.256 625.176 753.921 635.167 755.899C667.428 762.351 689.178 762.767 710.095 757.46C727.266 753.089 737.256 748.406 760.047 734.253C778.675 722.701 791.996 715.833 804.276 711.774C814.37 708.444 829.252 705.53 836.953 705.322L841.74 705.218L835.392 702.304C821.655 695.852 800.841 692.522 784.191 694.083C768.789 695.436 760.984 697.621 735.591 707.508C714.05 715.833 705.932 717.81 691.363 718.643C679.707 719.163 661.6 717.706 659.831 715.937C659.414 715.521 663.785 710.838 669.717 705.634C710.511 669.731 738.193 635.181 761.192 591.681C783.67 549.014 797.719 504.577 804.484 454.104C806.773 436.933 807.085 372.932 805.004 355.761C797.823 297.588 781.485 248.156 753.179 199.036C688.241 86.3317 571.478 12.236 441.082 0.996765C429.634 -0.0438843 386.03 -0.356079 378.642 0.47644ZM434.838 46.6822C523.711 54.7994 601.969 91.9513 662.328 154.6C758.798 254.816 788.457 404.985 737.465 534.236C727.266 560.253 710.303 591.369 694.693 613.223C672.527 644.027 639.954 675.871 609.358 696.477C594.789 706.363 594.268 706.467 567.835 697.725C538.28 687.943 527.562 685.654 509.142 684.925C486.663 684.093 469.596 687.215 453.882 695.124C450.552 696.789 447.638 698.142 447.326 698.142C445.661 698.142 453.466 672.749 459.294 659.116C474.175 624.358 496.862 594.803 526.937 570.868L530.579 567.954L526.417 568.682C518.82 569.931 501.441 576.071 491.971 580.858C465.017 594.387 442.227 614.992 423.703 642.466C415.377 654.746 402.473 679.826 397.894 692.73C393.315 705.218 393.107 702.616 395.917 670.043C401.016 611.246 425.264 549.118 462.624 499.27C476.673 480.537 486.455 469.506 516.634 438.078C544.733 408.731 555.347 397.284 554.723 396.764C553.995 396.035 534.534 401.447 526.521 404.673C453.674 433.603 393.107 507.595 359.91 608.124C356.371 618.947 351.792 634.349 349.919 642.154C347.942 650.063 345.965 656.515 345.444 656.515C344.3 656.515 345.34 599.07 346.901 576.383C351.896 502.808 365.633 430.689 386.343 370.122C389.152 362.005 391.754 354.512 392.17 353.576C392.587 352.535 394.46 351.598 396.853 351.286C402.369 350.558 407.364 347.332 412.776 340.88C416.626 336.301 482.5 238.27 493.74 220.474C496.966 215.375 497.278 214.022 497.278 207.258C497.278 200.493 496.966 199.453 494.572 196.955C490.722 193.104 484.061 192.48 477.505 195.394C459.71 203.199 432.236 232.234 409.133 267.304C399.455 281.978 384.886 310.076 381.243 321.107C379.058 327.975 378.538 337.237 380.203 341.608C381.035 343.793 379.89 346.811 372.814 361.381C356.267 395.827 340.657 437.974 330.459 475.438C320.26 512.798 309.333 574.51 306.731 608.436C306.315 613.743 305.691 618.322 305.274 618.53C304.858 618.738 304.234 609.06 303.922 596.884C301.632 519.979 287.791 462.222 260.526 416.12C253.553 404.152 235.758 381.778 233.364 381.778C231.907 381.778 232.219 399.261 233.989 415.6C236.174 435.789 239.712 456.602 248.142 498.853C258.548 551.199 262.399 574.926 264.688 601.88C266.041 618.322 266.041 666.609 264.688 667.442C264.168 667.754 263.648 667.13 263.648 665.881C263.648 661.822 259.277 642.57 255.634 630.498C242.002 585.437 219.315 551.615 189.24 531.843C177.168 523.829 166.761 519.042 154.689 515.92C140.64 512.382 140.432 512.694 150.319 523.101C185.181 559.628 207.347 612.39 212.655 671.292C213.8 683.676 214.008 705.426 213.071 705.426C211.926 705.426 202.144 699.286 192.882 692.626C116.081 637.783 62.9024 549.846 49.3737 455.145C44.7948 423.197 44.2744 395.827 47.8127 364.607C59.3641 260.02 115.977 165.006 201.207 107.145C251.888 72.6989 309.645 52.4059 372.918 46.7863C387.175 45.5374 421.517 45.4333 434.838 46.6822Z"
+      fill="currentColor"
+      stroke="none"
+    />
+  </svg>
+)
+
+const ArrowIcon = () => (
+  <svg aria-hidden="true" viewBox="0 0 24 24" focusable="false">
+    <path d="M5 12h14m-5-5 5 5-5 5" />
+  </svg>
+)
+
+const SwitchIcon = () => (
+  <svg aria-hidden="true" viewBox="0 0 24 24" focusable="false">
+    <path d="M7 7h10m0 0-3-3m3 3-3 3" />
+    <path d="M17 17H7m0 0 3 3m-3-3 3-3" />
+  </svg>
+)
+
+const MenuIcon = () => (
+  <svg aria-hidden="true" viewBox="0 0 24 24" focusable="false">
+    <path d="M4 7h16" />
+    <path d="M4 12h16" />
+    <path d="M4 17h16" />
+  </svg>
+)
+
+const SearchIcon = () => (
+  <svg aria-hidden="true" viewBox="0 0 24 24" focusable="false">
+    <circle cx="11" cy="11" r="7" />
+    <path d="m16 16 4 4" />
+  </svg>
+)
+
+const CarIcon = () => (
+  <svg aria-hidden="true" viewBox="0 0 24 24" focusable="false">
+    <path d="m5 12 1.8-4.2A3 3 0 0 1 9.6 6h4.8a3 3 0 0 1 2.8 1.8L19 12" />
+    <path d="M4 12h16v5H4z" />
+    <circle cx="7" cy="17" r="2" />
+    <circle cx="17" cy="17" r="2" />
+  </svg>
+)
+
+const StarIcon = () => (
+  <svg aria-hidden="true" viewBox="0 0 24 24" focusable="false">
+    <path d="m12 3 2.7 5.5 6.1.9-4.4 4.3 1 6.1L12 16.9l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9L12 3z" />
+  </svg>
+)
+
+function App() {
+  const [activeView, setActiveView] = useState<ActiveView>('home')
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false)
+  const [publishStep, setPublishStep] = useState(0)
+  const [isPublishComplete, setIsPublishComplete] = useState(false)
+  const [publishDraft, setPublishDraft] = useState<PublishDraft>(initialPublishDraft)
+  const [calendarCursor, setCalendarCursor] = useState(calendarMinMonth)
+  const [sortKey, setSortKey] = useState<SortKey>('earliest')
+  const [verifiedOnly, setVerifiedOnly] = useState(false)
+  const [searchDate, setSearchDate] = useState(() => getDateKey(new Date()))
+  const [minSeats, setMinSeats] = useState(1)
+  const [isPassengerPickerOpen, setIsPassengerPickerOpen] = useState(false)
+  const [isRouteReversed, setIsRouteReversed] = useState(false)
+  const heroFrameRef = useRef<HTMLDivElement>(null)
+  const parallaxFrameRef = useRef<number | null>(null)
+  const searchDateInputRef = useRef<HTMLInputElement>(null)
+
+  const origin = isRouteReversed ? 'Ciudad Real' : 'Daimiel'
+  const destination = isRouteReversed ? 'Daimiel' : 'Ciudad Real'
+  const currentPublishStep = publishSteps[publishStep]
+  const isPublishSummaryStep = publishStep === publishSteps.length - 1
+  const visibleCalendarMonths = [getCalendarMonth(calendarCursor), getCalendarMonth(addMonths(calendarCursor, 1))]
+  const canGoToPreviousCalendarMonth = !isBeforeMonth(addMonths(calendarCursor, -1), calendarMinMonth)
+  const publishProgress = `${(publishStep / (publishSteps.length - 1)) * 100}%`
+  const todayKey = getDateKey(new Date())
+  const searchDateLabel = searchDate === todayKey ? 'Hoy' : getReadableDate(getDateFromKey(searchDate))
+  const searchDateShortLabel = `${getDateFromKey(searchDate).getDate()} ${getMonthLabel(getDateFromKey(searchDate)).slice(0, 3)}`
+
+  const visibleTrips = useMemo(() => {
+    const searchDayOffset = getDayOffset(searchDate, todayKey)
+
+    return trips
+      .filter((trip) => trip.dayOffsets.includes(searchDayOffset))
+      .filter((trip) => !verifiedOnly || trip.verified)
+      .filter((trip) => trip.seats >= minSeats)
+      .toSorted((firstTrip, secondTrip) => {
+        if (sortKey === 'price') {
+          return firstTrip.price - secondTrip.price
+        }
+
+        if (sortKey === 'duration') {
+          return firstTrip.durationMinutes - secondTrip.durationMinutes
+        }
+
+        return firstTrip.departureTime.localeCompare(secondTrip.departureTime)
+      })
+  }, [minSeats, searchDate, sortKey, todayKey, verifiedOnly])
+
+  const showSearchView = () => {
+    setActiveView('search')
+    setIsMobileMenuOpen(false)
+    setIsMobileFiltersOpen(false)
+  }
+
+  const showPublishView = () => {
+    setActiveView('publish')
+    setIsMobileMenuOpen(false)
+    setIsMobileFiltersOpen(false)
+  }
+
+  const showHomeView = () => {
+    setActiveView('home')
+    setIsMobileMenuOpen(false)
+    setIsMobileFiltersOpen(false)
+  }
+
+  const updatePublishDraft = <Key extends keyof PublishDraft>(key: Key, value: PublishDraft[Key]) => {
+    setPublishDraft((currentDraft) => ({
+      ...currentDraft,
+      [key]: value,
+    }))
+    setIsPublishComplete(false)
+  }
+
+  const goToNextPublishStep = () => {
+    if (isPublishSummaryStep) {
+      setIsPublishComplete(true)
+      return
+    }
+
+    setPublishStep((currentStep) => Math.min(currentStep + 1, publishSteps.length - 1))
+  }
+
+  const goToPreviousPublishStep = () => {
+    setIsPublishComplete(false)
+    setPublishStep((currentStep) => Math.max(currentStep - 1, 0))
+  }
+
+  const resetPublishWizard = () => {
+    setPublishDraft(initialPublishDraft)
+    setPublishStep(0)
+    setIsPublishComplete(false)
+    setCalendarCursor(calendarMinMonth)
+  }
+
+  const updatePassengerCount = (amount: number) => {
+    setMinSeats((currentCount) => Math.min(4, Math.max(1, currentCount + amount)))
+  }
+
+  const openSearchDatePicker = () => {
+    setIsPassengerPickerOpen(false)
+    searchDateInputRef.current?.focus()
+    searchDateInputRef.current?.showPicker?.()
+  }
+
+  const handleHeroPointerMove = (event: PointerEvent<HTMLElement>) => {
+    if (event.pointerType !== 'mouse') {
+      return
+    }
+
+    const frame = heroFrameRef.current
+
+    if (!frame) {
+      return
+    }
+
+    const rect = frame.getBoundingClientRect()
+    const x = (event.clientX - rect.left) / rect.width - 0.5
+    const y = (event.clientY - rect.top) / rect.height - 0.5
+
+    if (parallaxFrameRef.current !== null) {
+      cancelAnimationFrame(parallaxFrameRef.current)
+    }
+
+    parallaxFrameRef.current = requestAnimationFrame(() => {
+      frame.style.setProperty('--parallax-x', `${x.toFixed(4)}`)
+      frame.style.setProperty('--parallax-y', `${y.toFixed(4)}`)
+      parallaxFrameRef.current = null
+    })
+  }
+
+  const handleHeroPointerLeave = () => {
+    const frame = heroFrameRef.current
+
+    if (!frame) {
+      return
+    }
+
+    if (parallaxFrameRef.current !== null) {
+      cancelAnimationFrame(parallaxFrameRef.current)
+      parallaxFrameRef.current = null
+    }
+
+    frame.style.setProperty('--parallax-x', '0')
+    frame.style.setProperty('--parallax-y', '0')
+  }
+
+  return (
+    <main className="app-shell">
+      <section className="premium-hero" aria-labelledby="hero-title" onPointerMove={handleHeroPointerMove}>
+        <div className={`hero-frame is-${activeView}`} ref={heroFrameRef} onPointerLeave={handleHeroPointerLeave}>
+          <div className="hero-backdrop" aria-hidden="true">
+            <div className="hero-backdrop-image" />
+            <div className="hero-water-glow" />
+          </div>
+
+          <header className="site-header">
+            <button className="brand-mark" type="button" onClick={showHomeView} aria-label="Volver al inicio">
+              <span className="brand-symbol">
+                <BrandIcon />
+              </span>
+            </button>
+
+            <nav className="main-nav" aria-label="Navegacion principal">
+              <button
+                className={activeView === 'search' ? 'is-active' : undefined}
+                type="button"
+                onClick={showSearchView}
+                aria-pressed={activeView === 'search'}
+              >
+                Buscar
+              </button>
+              <button
+                className={activeView === 'publish' ? 'is-active' : undefined}
+                type="button"
+                onClick={showPublishView}
+                aria-pressed={activeView === 'publish'}
+              >
+                Publicar
+              </button>
+              <a href="/perfil">Perfil</a>
+            </nav>
+
+            <button
+              className="mobile-menu-toggle"
+              type="button"
+              onClick={() => setIsMobileMenuOpen((currentValue) => !currentValue)}
+              aria-expanded={isMobileMenuOpen}
+              aria-controls="mobile-nav-menu"
+              aria-label="Abrir menu"
+            >
+              <MenuIcon />
+            </button>
+
+            <div className={`mobile-nav-menu ${isMobileMenuOpen ? 'is-open' : ''}`} id="mobile-nav-menu">
+              <button
+                className={activeView === 'search' ? 'is-active' : undefined}
+                type="button"
+                onClick={showSearchView}
+                aria-pressed={activeView === 'search'}
+              >
+                Buscar
+              </button>
+              <button
+                className={activeView === 'publish' ? 'is-active' : undefined}
+                type="button"
+                onClick={showPublishView}
+                aria-pressed={activeView === 'publish'}
+              >
+                Publicar
+              </button>
+              <a href="/perfil" onClick={() => setIsMobileMenuOpen(false)}>
+                Perfil
+              </a>
+            </div>
+          </header>
+
+          <div className="hero-content" aria-hidden={activeView !== 'home'}>
+            <p className="eyebrow">Viajes compartidos locales</p>
+            <h1 id="hero-title">Muevete entre Daimiel y Ciudad Real</h1>
+            <div className="hero-actions" aria-label="Acciones principales">
+              <button className="primary-link" type="button" onClick={showSearchView}>
+                Buscar viaje
+                <ArrowIcon />
+              </button>
+              <button className="secondary-link" type="button" onClick={showPublishView}>
+                Publicar salida
+              </button>
+            </div>
+          </div>
+
+          <section className="search-view" aria-label="Buscar viaje" aria-hidden={activeView !== 'search'}>
+            <div className="search-panel">
+              <div className="mobile-search-summary" role="search">
+                <SearchIcon />
+                <button
+                  className="mobile-route-summary"
+                  type="button"
+                  onClick={() => setIsRouteReversed((currentValue) => !currentValue)}
+                  aria-label="Cambiar origen y destino"
+                >
+                  <strong>
+                    <span>{origin}</span>
+                    <ArrowIcon />
+                    <span>{destination}</span>
+                  </strong>
+                  <span>
+                    {searchDateLabel}, {minSeats} plaza{minSeats > 1 ? 's' : ''}
+                  </span>
+                </button>
+                <button
+                  className="mobile-filter-toggle"
+                  type="button"
+                  onClick={() => setIsMobileFiltersOpen((currentValue) => !currentValue)}
+                  aria-expanded={isMobileFiltersOpen}
+                  aria-controls="mobile-filters-panel"
+                >
+                  Filtrar
+                </button>
+                <div className="mobile-search-controls">
+                  <label className="mobile-date-control">
+                    <span>Fecha</span>
+                    <input
+                      type="date"
+                      min={todayKey}
+                      value={searchDate}
+                      onChange={(event) => setSearchDate(event.target.value || todayKey)}
+                      aria-label="Fecha del viaje"
+                    />
+                  </label>
+                  <div className="mobile-passenger-control" aria-label="Pasajeros">
+                    <button
+                      type="button"
+                      onClick={() => updatePassengerCount(-1)}
+                      disabled={minSeats === 1}
+                      aria-label="Quitar un pasajero"
+                    >
+                      -
+                    </button>
+                    <span>{minSeats}</span>
+                    <button
+                      type="button"
+                      onClick={() => updatePassengerCount(1)}
+                      disabled={minSeats === 4}
+                      aria-label="Anadir un pasajero"
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="search-bar" role="search">
+                <div className="search-field">
+                  <span>Origen</span>
+                  <strong>{origin}</strong>
+                </div>
+                <button
+                  className="swap-route"
+                  type="button"
+                  onClick={() => setIsRouteReversed((currentValue) => !currentValue)}
+                  aria-label="Cambiar origen y destino"
+                >
+                  <ArrowRightLeft aria-hidden="true" />
+                </button>
+                <div className="search-field">
+                  <span>Destino</span>
+                  <strong>{destination}</strong>
+                </div>
+                <label className="search-field search-date-field is-small" onClick={openSearchDatePicker}>
+                  <span>Fecha</span>
+                  <strong className="search-field-value">
+                    {searchDateShortLabel}
+                    <Calendar aria-hidden="true" />
+                  </strong>
+                  <input
+                    ref={searchDateInputRef}
+                    type="date"
+                    min={todayKey}
+                    value={searchDate}
+                    onChange={(event) => setSearchDate(event.target.value || todayKey)}
+                    aria-label="Fecha del viaje"
+                  />
+                </label>
+                <div className="search-field passenger-search-field is-small">
+                  <span>Pasajeros</span>
+                  <button
+                    className="passenger-display"
+                    type="button"
+                    onClick={() => setIsPassengerPickerOpen((currentValue) => !currentValue)}
+                    aria-expanded={isPassengerPickerOpen}
+                    aria-controls="passenger-picker"
+                  >
+                    <UserRound aria-hidden="true" />
+                    <strong>{minSeats}</strong>
+                  </button>
+                  <div className={`passenger-popover ${isPassengerPickerOpen ? 'is-open' : ''}`} id="passenger-picker">
+                    <button
+                      type="button"
+                      onClick={() => updatePassengerCount(-1)}
+                      disabled={minSeats === 1}
+                      aria-label="Quitar un pasajero"
+                    >
+                      -
+                    </button>
+                    <strong>{minSeats}</strong>
+                    <button
+                      type="button"
+                      onClick={() => updatePassengerCount(1)}
+                      disabled={minSeats === 4}
+                      aria-label="Anadir un pasajero"
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+                <button className="search-submit" type="button" onClick={() => setIsPassengerPickerOpen(false)}>
+                  Buscar
+                </button>
+              </div>
+
+              <div className="search-layout">
+                <aside
+                  className={`filters-panel ${isMobileFiltersOpen ? 'is-open' : ''}`}
+                  id="mobile-filters-panel"
+                  aria-label="Filtros de busqueda"
+                >
+                  <div className="route-card">
+                    <strong className="route-title">
+                      <span>{origin}</span>
+                      <ArrowIcon />
+                      <span>{destination}</span>
+                    </strong>
+                    <small>
+                      {visibleTrips.length} viajes disponibles · {searchDateLabel}, {minSeats} plaza
+                      {minSeats > 1 ? 's' : ''}
+                    </small>
+                  </div>
+
+                  <div className="filter-group">
+                    <div className="filter-heading">
+                      <h2>Ordenar por</h2>
+                    </div>
+                    <button
+                      className={`filter-option ${sortKey === 'earliest' ? 'is-selected' : ''}`}
+                      type="button"
+                      onClick={() => setSortKey('earliest')}
+                      aria-pressed={sortKey === 'earliest'}
+                    >
+                      <span />
+                      Salida mas temprana
+                    </button>
+                    <button
+                      className={`filter-option ${sortKey === 'price' ? 'is-selected' : ''}`}
+                      type="button"
+                      onClick={() => setSortKey('price')}
+                      aria-pressed={sortKey === 'price'}
+                    >
+                      <span />
+                      Precio mas bajo
+                    </button>
+                    <button
+                      className={`filter-option ${sortKey === 'duration' ? 'is-selected' : ''}`}
+                      type="button"
+                      onClick={() => setSortKey('duration')}
+                      aria-pressed={sortKey === 'duration'}
+                    >
+                      <span />
+                      Viaje mas corto
+                    </button>
+                  </div>
+
+                  <div className="filter-group">
+                    <div className="filter-heading">
+                      <h2>Confianza</h2>
+                    </div>
+                    <label className="toggle-option">
+                      <input
+                        type="checkbox"
+                        checked={verifiedOnly}
+                        onChange={(event) => setVerifiedOnly(event.target.checked)}
+                      />
+                      <span>Solo conductores verificados</span>
+                    </label>
+                  </div>
+
+                  <div className="filter-group">
+                    <div className="filter-heading">
+                      <h2>Plazas</h2>
+                    </div>
+                    <div className="seat-controls" aria-label="Plazas minimas">
+                      {[1, 2, 3].map((seatCount) => (
+                        <button
+                          className={minSeats === seatCount ? 'is-selected' : undefined}
+                          type="button"
+                          onClick={() => setMinSeats(seatCount)}
+                          aria-pressed={minSeats === seatCount}
+                          key={seatCount}
+                        >
+                          {seatCount}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </aside>
+
+                <div className="results-column">
+                  <div className="results-header">
+                    <div className="results-summary">
+                      <strong>{visibleTrips.length} viajes disponibles</strong>
+                      <span>
+                        {searchDateLabel}, {minSeats} plaza{minSeats > 1 ? 's' : ''}
+                      </span>
+                    </div>
+                    <div className="results-tabs" aria-label="Tipos de viaje">
+                      <button className="is-selected" type="button">
+                        Todo
+                      </button>
+                      <button type="button">
+                        <CarIcon />
+                        Coche
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="trip-list">
+                    {visibleTrips.length > 0 ? (
+                      visibleTrips.map((trip) => (
+                        <article className="trip-card" key={trip.id}>
+                          <div className="trip-main">
+                            <div className="trip-point">
+                              <strong>{trip.departureTime}</strong>
+                              <span>{isRouteReversed ? trip.to : trip.from}</span>
+                            </div>
+                            <div className="trip-duration-line">
+                              <span className="trip-route-segment trip-route-segment-left" aria-hidden="true">
+                                <span className="trip-route-dot" />
+                                <svg viewBox="0 0 120 36" preserveAspectRatio="none">
+                                  <path d="M12 10 C34 10 31 28 58 28 H112" />
+                                </svg>
+                              </span>
+                              <em>{trip.duration}</em>
+                              <span className="trip-route-segment trip-route-segment-right" aria-hidden="true">
+                                <svg viewBox="0 0 120 36" preserveAspectRatio="none">
+                                  <path d="M8 10 H62 C88 10 84 28 108 28" />
+                                </svg>
+                                <span className="trip-route-dot" />
+                              </span>
+                            </div>
+                            <div className="trip-point">
+                              <strong>{trip.arrivalTime}</strong>
+                              <span>{isRouteReversed ? trip.from : trip.to}</span>
+                            </div>
+                          </div>
+                          <div className="trip-side">
+                            <div className="trip-price">
+                              <strong>{trip.priceLabel.replace(' EUR', '€')}</strong>
+                              <span>
+                                <i aria-hidden="true" /> {trip.seats} plaza{trip.seats > 1 ? 's' : ''}
+                              </span>
+                            </div>
+                            <div className="driver-summary">
+                              <div>
+                                <strong>{trip.driver}</strong>
+                                <span>
+                                  <StarIcon />
+                                  {trip.rating}
+                                </span>
+                              </div>
+                              <span className="driver-photo">
+                                <img src={trip.driverAvatarUrl} alt="" />
+                                {trip.verified && <i aria-label="Conductor verificado" />}
+                              </span>
+                            </div>
+                          </div>
+                        </article>
+                      ))
+                    ) : (
+                      <div className="empty-results">
+                        <strong>No hay viajes con esos filtros</strong>
+                        <span>Prueba otra fecha o reduce el numero de pasajeros.</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section className="publish-view" aria-label="Publicar viaje" aria-hidden={activeView !== 'publish'}>
+            <div className="publish-card">
+              {isPublishComplete ? (
+                <div className="publish-success">
+                  <span className="publish-kicker">Viaje preparado</span>
+                  <h2>Tu salida esta lista para publicarse</h2>
+                  <p>
+                    Hemos guardado el borrador de {publishDraft.origin} a {publishDraft.destination}. En una version
+                    real aqui se enviaria al backend.
+                  </p>
+                  <div className="publish-summary-card">
+                    <div>
+                      <span>Ruta</span>
+                      <strong>
+                        {publishDraft.origin} <ArrowIcon /> {publishDraft.destination}
+                      </strong>
+                    </div>
+                    <div>
+                      <span>Fecha y hora</span>
+                      <strong>
+                        {publishDraft.date}, {publishDraft.time}
+                      </strong>
+                    </div>
+                    <div>
+                      <span>Plazas</span>
+                      <strong>{publishDraft.seats}</strong>
+                    </div>
+                    <div>
+                      <span>Precio</span>
+                      <strong>{publishDraft.price} EUR</strong>
+                    </div>
+                  </div>
+                  <div className="publish-actions">
+                    <button className="secondary-link" type="button" onClick={resetPublishWizard}>
+                      Crear otro viaje
+                    </button>
+                    <button className="primary-link" type="button" onClick={showHomeView}>
+                      Volver al inicio
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <div className="publish-step-shell" key={publishStep}>
+                    <div className={`publish-copy ${isPublishSummaryStep ? 'is-summary' : ''}`}>
+                      <h2>
+                        {currentPublishStep === 'Ruta' && 'Define la ruta del viaje'}
+                        {currentPublishStep === 'Fecha' && 'Elige el dia de salida'}
+                        {currentPublishStep === 'Hora' && 'A que hora sales'}
+                        {currentPublishStep === 'Plazas' && 'Cuantas plazas ofreces'}
+                        {currentPublishStep === 'Precio' && 'Pon precio por plaza'}
+                        {currentPublishStep === 'Resumen' && 'Viaje listo para publicar'}
+                      </h2>
+                      <p>
+                        {currentPublishStep === 'Ruta' && 'Usa la ruta habitual o ajustala antes de continuar.'}
+                        {currentPublishStep === 'Hora' && 'Selecciona la hora de salida.'}
+                        {currentPublishStep === 'Plazas' && 'Indica cuantas personas pueden reservar tu coche.'}
+                        {currentPublishStep === 'Precio' && 'El precio se mostrara a los pasajeros en la busqueda.'}
+                        {currentPublishStep === 'Resumen' && 'Comprueba los datos antes de hacer visible tu salida.'}
+                      </p>
+                    </div>
+
+                    <div className="publish-step-body">
+                      {currentPublishStep === 'Ruta' && (
+                        <div className="publish-route-step">
+                          <label>
+                            <span>Origen</span>
+                            <input
+                              value={publishDraft.origin}
+                              onChange={(event) => updatePublishDraft('origin', event.target.value)}
+                            />
+                          </label>
+                          <button
+                            className="publish-swap"
+                            type="button"
+                            onClick={() =>
+                              setPublishDraft((currentDraft) => ({
+                                ...currentDraft,
+                                origin: currentDraft.destination,
+                                destination: currentDraft.origin,
+                              }))
+                            }
+                            aria-label="Invertir origen y destino"
+                          >
+                            <SwitchIcon />
+                          </button>
+                          <label>
+                            <span>Destino</span>
+                            <input
+                              value={publishDraft.destination}
+                              onChange={(event) => updatePublishDraft('destination', event.target.value)}
+                            />
+                          </label>
+                        </div>
+                      )}
+
+                      {currentPublishStep === 'Fecha' && (
+                        <div className="publish-calendar-step">
+                          <div className="calendar-toolbar">
+                            <button
+                              type="button"
+                              onClick={() => setCalendarCursor((currentDate) => addMonths(currentDate, -1))}
+                              disabled={!canGoToPreviousCalendarMonth}
+                              aria-label="Mostrar mes anterior"
+                            >
+                              <ArrowIcon />
+                            </button>
+                            <span>{publishDraft.date}</span>
+                            <button
+                              type="button"
+                              onClick={() => setCalendarCursor((currentDate) => addMonths(currentDate, 1))}
+                              aria-label="Mostrar mes siguiente"
+                            >
+                              <ArrowIcon />
+                            </button>
+                          </div>
+
+                          <div className="calendar-months">
+                            {visibleCalendarMonths.map((month, monthIndex) => (
+                              <div className={`calendar-month month-${monthIndex + 1}`} key={month.key}>
+                                <h3>{month.label}</h3>
+                                <div className="calendar-grid is-weekdays">
+                                  {weekDays.map((weekDay) => (
+                                    <span key={weekDay}>{weekDay}</span>
+                                  ))}
+                                </div>
+                                <div className="calendar-grid">
+                                  {Array.from({ length: month.startOffset }, (_, index) => (
+                                    <span className="calendar-empty" key={`${month.key}-empty-${index}`} />
+                                  ))}
+                                  {month.days.map((dayDate) => {
+                                    const dateKey = getDateKey(dayDate)
+                                    const dateLabel = getReadableDate(dayDate)
+                                    const isPast = dateKey < getDateKey(today)
+
+                                    return (
+                                      <button
+                                        className={publishDraft.dateKey === dateKey ? 'is-selected' : undefined}
+                                        type="button"
+                                        onClick={() => {
+                                          updatePublishDraft('date', dateLabel)
+                                          updatePublishDraft('dateKey', dateKey)
+                                        }}
+                                        aria-pressed={publishDraft.dateKey === dateKey}
+                                        disabled={isPast}
+                                        key={dateKey}
+                                      >
+                                        {dayDate.getDate()}
+                                      </button>
+                                    )
+                                  })}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {currentPublishStep === 'Hora' && (
+                        <div className="publish-time-step">
+                          <label>
+                            <span>Hora de salida</span>
+                            <input
+                              type="time"
+                              value={publishDraft.time}
+                              step="900"
+                              onChange={(event) => updatePublishDraft('time', event.target.value)}
+                            />
+                          </label>
+                        </div>
+                      )}
+
+                      {currentPublishStep === 'Plazas' && (
+                        <div className="publish-seat-grid">
+                          {[1, 2, 3, 4].map((seatCount) => (
+                            <button
+                              className={publishDraft.seats === seatCount ? 'is-selected' : undefined}
+                              type="button"
+                              onClick={() => updatePublishDraft('seats', seatCount)}
+                              aria-pressed={publishDraft.seats === seatCount}
+                              key={seatCount}
+                            >
+                              {seatCount}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+
+                      {currentPublishStep === 'Precio' && (
+                        <div className="publish-price-step">
+                          <div className="publish-choice-grid">
+                            {publishPriceOptions.map((priceOption) => (
+                              <button
+                                className={publishDraft.price === priceOption ? 'is-selected' : undefined}
+                                type="button"
+                                onClick={() => updatePublishDraft('price', priceOption)}
+                                aria-pressed={publishDraft.price === priceOption}
+                                key={priceOption}
+                              >
+                                {priceOption} EUR
+                              </button>
+                            ))}
+                          </div>
+                          <label>
+                            <span>Otro precio</span>
+                            <input
+                              inputMode="decimal"
+                              value={publishDraft.price}
+                              onChange={(event) => updatePublishDraft('price', event.target.value)}
+                            />
+                          </label>
+                        </div>
+                      )}
+
+                      {currentPublishStep === 'Resumen' && (
+                        <div className="publish-review-card">
+                          <div className="review-route">
+                            <span className="review-eyebrow">Trayecto</span>
+                            <div className="review-route-line">
+                              <div className="review-place">
+                                <small>Salida</small>
+                                <strong>{publishDraft.origin}</strong>
+                              </div>
+                              <span className="review-route-track" aria-hidden="true">
+                                <i />
+                                <ArrowIcon />
+                              </span>
+                              <div className="review-place">
+                                <small>Llegada</small>
+                                <strong>{publishDraft.destination}</strong>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="review-details" aria-label="Detalles del viaje">
+                            <div>
+                              <span>Dia</span>
+                              <strong>{publishDraft.date}</strong>
+                            </div>
+                            <div>
+                              <span>Hora</span>
+                              <strong>{publishDraft.time}</strong>
+                            </div>
+                            <div>
+                              <span>Plazas</span>
+                              <strong>
+                                {publishDraft.seats} plaza{publishDraft.seats > 1 ? 's' : ''}
+                              </strong>
+                            </div>
+                            <div>
+                              <span>Precio</span>
+                              <strong>{publishDraft.price} EUR</strong>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="publish-actions">
+                    <button
+                      className="secondary-link"
+                      type="button"
+                      onClick={goToPreviousPublishStep}
+                      disabled={publishStep === 0}
+                    >
+                      Atras
+                    </button>
+                    <button className="primary-link" type="button" onClick={goToNextPublishStep}>
+                      {isPublishSummaryStep ? 'Publicar viaje' : 'Continuar'}
+                      <ArrowIcon />
+                    </button>
+                  </div>
+
+                  <div
+                    className="publish-mobile-progress"
+                    style={{ '--publish-progress': publishProgress } as CSSProperties}
+                    aria-label={`Paso ${publishStep + 1} de ${publishSteps.length}: ${currentPublishStep}`}
+                  >
+                    <span>
+                      Paso {publishStep + 1} de {publishSteps.length}
+                    </span>
+                    <i aria-hidden="true" />
+                  </div>
+
+                  <div className="publish-progress" aria-label="Progreso de publicacion">
+                    {publishSteps.map((step, index) => (
+                      <div
+                        className={`publish-progress-item ${index < publishStep ? 'is-complete' : ''} ${
+                          index === publishStep ? 'is-current' : ''
+                        }`}
+                        key={step}
+                      >
+                        <span aria-label={`${step}, paso ${index + 1}`}>
+                          {index + 1}
+                        </span>
+                        {index < publishSteps.length - 1 && <i aria-hidden="true" />}
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+          </section>
+
+          <div className="sponsors-strip" aria-label="Patrocinadores locales" aria-hidden={activeView !== 'home'}>
+            <div className="sponsor-marquee">
+              <div className="sponsor-track">
+                {sponsorLoop.map((sponsor, index) => (
+                  <a className="sponsor-logo" href="/" key={`${sponsor.name}-${index}`}>
+                    {sponsor.name}
+                  </a>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  )
+}
+
+export default App
