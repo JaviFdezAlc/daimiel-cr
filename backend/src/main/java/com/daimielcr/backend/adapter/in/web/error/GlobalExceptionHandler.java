@@ -17,6 +17,7 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 import com.daimielcr.backend.domain.exceptions.InsufficientSeatsException;
 import com.daimielcr.backend.domain.exceptions.InvalidTripException;
 import com.daimielcr.backend.domain.exceptions.TripNotAvailableException;
+import com.daimielcr.backend.domain.exceptions.TripNotFoundException;
 import com.daimielcr.backend.domain.exceptions.UnauthorizedTripActionException;
 import com.daimielcr.backend.domain.exceptions.UserNotFoundException;
 import com.daimielcr.backend.domain.exceptions.UserPhoneNotVerifiedException;
@@ -166,6 +167,16 @@ public class GlobalExceptionHandler {
                 HttpStatus.INTERNAL_SERVER_ERROR,
                 "INTERNAL_ERROR",
                 "Ha ocurrido un error inesperado",
+                request
+        );
+    }
+
+    @ExceptionHandler(TripNotFoundException.class)
+    public ResponseEntity<ApiErrorResponse> handleTripNotFound(TripNotFoundException exception, HttpServletRequest request){
+        return buildResponse(
+                HttpStatus.NOT_FOUND, 
+                "TRIP_NOT_FOUND", 
+                exception.getMessage(), 
                 request
         );
     }

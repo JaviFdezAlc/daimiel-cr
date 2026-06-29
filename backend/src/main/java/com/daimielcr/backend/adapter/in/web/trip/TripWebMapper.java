@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.util.Objects;
 
 import com.daimielcr.backend.application.port.in.trip.CreateTripCommand;
+import com.daimielcr.backend.application.port.in.trip.TripDetail;
 import com.daimielcr.backend.domain.model.trip.TripId;
 import com.daimielcr.backend.domain.model.user.UserId;
 
@@ -38,5 +39,26 @@ public final class TripWebMapper {
         Objects.requireNonNull(tripId, "El id del viaje es obligatorio");
 
         return new CreateTripResponse(tripId.value());
+    }
+
+    public static TripDetailResponse toResponse(TripDetail detail) {
+        Objects.requireNonNull(detail, "El detalle del viaje es obligatorio");
+
+        return new TripDetailResponse(
+                detail.id().value(),
+                detail.driverId().value(),
+                detail.origin(),
+                detail.destination(),
+                detail.departureAt(),
+                detail.totalSeats(),
+                detail.availableSeats(),
+                detail.contributionAmount(),
+                detail.departurePoint(),
+                detail.arrivalPoint(),
+                detail.comment(),
+                detail.status(),
+                detail.createdAt(),
+                detail.updatedAt()
+        );
     }
 }
