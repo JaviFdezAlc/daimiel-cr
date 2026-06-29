@@ -9,11 +9,13 @@ import org.springframework.context.annotation.Configuration;
 import com.daimielcr.backend.application.port.in.trip.CreateTripUseCase;
 import com.daimielcr.backend.application.port.in.trip.GetTripDetailUseCase;
 import com.daimielcr.backend.application.port.in.trip.SearchTripsUseCase;
+import com.daimielcr.backend.application.port.in.trip.UpdateTripUseCase;
 import com.daimielcr.backend.application.port.out.trip.TripRepositoryPort;
 import com.daimielcr.backend.application.port.out.user.UserRepositoryPort;
 import com.daimielcr.backend.application.service.trip.CreateTripService;
 import com.daimielcr.backend.application.service.trip.GetTripDetailService;
 import com.daimielcr.backend.application.service.trip.SearchTripsService;
+import com.daimielcr.backend.application.service.trip.UpdateTripService;
 
 @Configuration(proxyBeanMethods = false)
 public class TripUseCaseConfig {
@@ -22,29 +24,33 @@ public class TripUseCaseConfig {
     public CreateTripUseCase createTripUseCase(
             UserRepositoryPort userRepositoryPort,
             TripRepositoryPort tripRepositoryPort,
-            Clock clock
-    ) {
+            Clock clock) {
         return new CreateTripService(
                 userRepositoryPort,
                 tripRepositoryPort,
-                clock
-        );
+                clock);
     }
 
     @Bean
     public GetTripDetailUseCase getTripDetailUseCase(
-            TripRepositoryPort tripRepositoryPort
-    ) {
+            TripRepositoryPort tripRepositoryPort) {
         return new GetTripDetailService(tripRepositoryPort);
     }
-
 
     @Bean
     public SearchTripsUseCase getSearchTripsUseCase(
             TripRepositoryPort tripRepositoryPort,
             Clock clock,
-            ZoneId applicationZoneId
-    ) {
+            ZoneId applicationZoneId) {
         return new SearchTripsService(tripRepositoryPort, clock, applicationZoneId);
+    }
+
+    @Bean
+    public UpdateTripUseCase updateTripUseCase(
+            TripRepositoryPort tripRepositoryPort,
+            Clock clock) {
+        return new UpdateTripService(
+                tripRepositoryPort,
+                clock);
     }
 }

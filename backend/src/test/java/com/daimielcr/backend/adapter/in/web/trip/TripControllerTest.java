@@ -25,6 +25,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -38,15 +39,20 @@ import com.daimielcr.backend.application.port.in.trip.SearchTripsUseCase;
 import com.daimielcr.backend.application.port.in.trip.TripDetail;
 import com.daimielcr.backend.application.port.in.trip.TripSort;
 import com.daimielcr.backend.application.port.in.trip.TripSummary;
+import com.daimielcr.backend.application.port.in.trip.UpdateTripCommand;
+import com.daimielcr.backend.application.port.in.trip.UpdateTripUseCase;
 import com.daimielcr.backend.config.SecurityConfig;
 import com.daimielcr.backend.domain.exceptions.InvalidTripException;
 import com.daimielcr.backend.domain.exceptions.TripNotFoundException;
+import com.daimielcr.backend.domain.exceptions.UnauthorizedTripActionException;
 import com.daimielcr.backend.domain.exceptions.UserNotFoundException;
 import com.daimielcr.backend.domain.exceptions.UserPhoneNotVerifiedException;
 import com.daimielcr.backend.domain.model.trip.TripId;
 import com.daimielcr.backend.domain.model.trip.TripLocation;
 import com.daimielcr.backend.domain.model.trip.TripStatus;
 import com.daimielcr.backend.domain.model.user.UserId;
+
+
 
 @WebMvcTest(controllers = TripController.class)
 @Import(SecurityConfig.class)
@@ -65,6 +71,9 @@ class TripControllerTest {
 
         @MockitoBean
         private SearchTripsUseCase searchTripsUseCase;
+
+        @MockitoBean
+        private UpdateTripUseCase updateTripUseCase;
 
         @Test
         void shouldCreateTripAndReturnCreatedResponse() throws Exception {
@@ -480,5 +489,159 @@ class TripControllerTest {
                                                 .value("Falta el parámetro obligatorio: origin"));
 
                 verifyNoInteractions(searchTripsUseCase);
+        }
+
+        @Test
+        void shouldUpdateTripWhenRequestIsValid() throws Exception {
+                UUID tripUuid = UUID.fromString(
+                                "55555555-5555-5555-5555-555555555555");
+
+                UUID driverUuid = UUID.fromString(
+                                "11111111-1111-1111-1111-111111111111");
+
+                Instant departureAt = Instant.parse("2030-07-02T15:30:00Z");
+
+                TripDetail updatedTrip = new TripDetail(
+                                new TripId(tripUuid),
+                                new UserId(driverUuid),
+                                TripLocation.DAIMIEL,
+                                TripLocation.CIUDAD_REAL,
+                                departureAt,
+                                4,
+                                4,
+                                new BigDecimal("3.50"),
+                                "Plaza de España, Daimiel",
+                                "Estación de autobuses, Ciudad Real",
+                                "Salgo después de clase",
+                                TripStatus.ACTIVE,
+                                Instant.parse("2030-06-01T10:00:00Z"),
+                                Instant.parse("2030-06-29T17:00:00Z"));
+
+                when(updateTripUseCase.update(any(UpdateTripCommand.class)))
+                                .thenReturn(updatedTrip);
+
+                mockMvc.perform(put("/api/v1/trips/{tripId}", tripUuid)
+                                .header("X-User-Id", driverUuid)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("""
+                                                {
+                                                  "origin": "DAIMIEL",
+                                                  "destination": "CIUDAD_REAL",
+                                                  "departureAt": "2030-07-02T15:30:00Z",
+                                                  "totalSeats": 4,
+                                                  "contributionAmount": 3.50,
+                                                  "departurePoint": "Plaza de España, Daimiel",
+                                                  "arrivalPoint": "Estación de autobuses, Ciudad Real",
+                                                  "comment": "Salgo después de clase"
+                                                }
+                                                """))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.id").value(tripUuid.toString()))
+                                .andExpect(jsonPath("$.driverId").value(driverUuid.toString()))
+                                .andExpect(jsonPath("$.origin").value("DAIMIEL"))
+                                .andExpect(jsonPath("$.destination").value("CIUDAD_REAL"))
+                                .andExpect(jsonPath("$.departureAt").value(departureAt.toString()))
+                                .andExpect(jsonPath("$.totalSeats").value(4))
+                                .andExpect(jsonPath("$.availableSeats").value(4))
+                                .andExpect(jsonPath("$.contributionAmount").value(3.5))
+                                .andExpect(jsonPath("$.status").value("ACTIVE"));
+
+                ArgumentCaptor<UpdateTripCommand> commandCaptor = ArgumentCaptor.forClass(UpdateTripCommand.class);
+
+                verify(updateTripUseCase).update(commandCaptor.capture());
+
+                UpdateTripCommand command = commandCaptor.getValue();
+
+                assertEquals(new TripId(tripUuid), command.tripId());
+                assertEquals(new UserId(driverUuid), command.requesterId());
+                assertEquals(TripLocation.DAIMIEL, command.origin());
+                assertEquals(TripLocation.CIUDAD_REAL, command.destination());
+                assertEquals(departureAt, command.departureAt());
+                assertEquals(4, command.totalSeats());
+                assertEquals(new BigDecimal("3.50"), command.contributionAmount());
+        }
+
+        @Test
+        void shouldReturnNotFoundWhenUpdatingUnknownTrip() throws Exception {
+                UUID tripUuid = UUID.fromString(
+                                "55555555-5555-5555-5555-555555555555");
+
+                UUID driverUuid = UUID.fromString(
+                                "11111111-1111-1111-1111-111111111111");
+
+                when(updateTripUseCase.update(any(UpdateTripCommand.class)))
+                                .thenThrow(new TripNotFoundException(
+                                                "No existe el viaje: " + tripUuid));
+
+                mockMvc.perform(put("/api/v1/trips/{tripId}", tripUuid)
+                                .header("X-User-Id", driverUuid)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(validUpdateTripJson()))
+                                .andExpect(status().isNotFound())
+                                .andExpect(jsonPath("$.code").value("TRIP_NOT_FOUND"));
+        }
+
+        @Test
+        void shouldReturnForbiddenWhenRequesterIsNotTripDriver() throws Exception {
+                UUID tripUuid = UUID.fromString(
+                                "55555555-5555-5555-5555-555555555555");
+
+                UUID requesterUuid = UUID.fromString(
+                                "33333333-3333-3333-3333-333333333333");
+
+                when(updateTripUseCase.update(any(UpdateTripCommand.class)))
+                                .thenThrow(new UnauthorizedTripActionException(
+                                                "No tienes permiso para modificar este viaje"));
+
+                mockMvc.perform(put("/api/v1/trips/{tripId}", tripUuid)
+                                .header("X-User-Id", requesterUuid)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(validUpdateTripJson()))
+                                .andExpect(status().isForbidden())
+                                .andExpect(jsonPath("$.code")
+                                                .value("FORBIDDEN"));
+        }
+
+        @Test
+        void shouldReturnBadRequestWhenUpdateTripRequestIsInvalid() throws Exception {
+                UUID tripUuid = UUID.fromString(
+                                "55555555-5555-5555-5555-555555555555");
+
+                UUID driverUuid = UUID.fromString(
+                                "11111111-1111-1111-1111-111111111111");
+
+                mockMvc.perform(put("/api/v1/trips/{tripId}", tripUuid)
+                                .header("X-User-Id", driverUuid)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("""
+                                                {
+                                                  "origin": "DAIMIEL",
+                                                  "destination": "CIUDAD_REAL",
+                                                  "departureAt": "2030-07-02T15:30:00Z",
+                                                  "totalSeats": 0,
+                                                  "contributionAmount": 3.50,
+                                                  "departurePoint": "Plaza de España, Daimiel",
+                                                  "arrivalPoint": "Estación de autobuses, Ciudad Real"
+                                                }
+                                                """))
+                                .andExpect(status().isBadRequest())
+                                .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"));
+
+                verifyNoInteractions(updateTripUseCase);
+        }
+
+        private String validUpdateTripJson() {
+                return """
+                                {
+                                  "origin": "DAIMIEL",
+                                  "destination": "CIUDAD_REAL",
+                                  "departureAt": "2030-07-02T15:30:00Z",
+                                  "totalSeats": 4,
+                                  "contributionAmount": 3.50,
+                                  "departurePoint": "Plaza de España, Daimiel",
+                                  "arrivalPoint": "Estación de autobuses, Ciudad Real",
+                                  "comment": "Salgo después de clase"
+                                }
+                                """;
         }
 }

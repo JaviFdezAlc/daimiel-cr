@@ -10,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -24,6 +25,7 @@ import com.daimielcr.backend.application.port.in.trip.SearchTripsResult;
 import com.daimielcr.backend.application.port.in.trip.SearchTripsUseCase;
 import com.daimielcr.backend.application.port.in.trip.TripDetail;
 import com.daimielcr.backend.application.port.in.trip.TripSort;
+import com.daimielcr.backend.application.port.in.trip.UpdateTripUseCase;
 import com.daimielcr.backend.domain.model.trip.TripId;
 import com.daimielcr.backend.domain.model.trip.TripLocation;
 import com.daimielcr.backend.domain.model.user.UserId;
@@ -37,11 +39,13 @@ public class TripController {
         private final CreateTripUseCase createTripUseCase;
         private final GetTripDetailUseCase getTripDetailUseCase;
         private final SearchTripsUseCase searchTripsUseCase;
+        private final UpdateTripUseCase updateTripUseCase;
 
         public TripController(
                         CreateTripUseCase createTripUseCase,
                         GetTripDetailUseCase getTripDetailUseCase,
-                        SearchTripsUseCase searchTripsUseCase) {
+                        SearchTripsUseCase searchTripsUseCase,
+                        UpdateTripUseCase updateTripUseCase) {
                 this.createTripUseCase = Objects.requireNonNull(
                                 createTripUseCase,
                                 "El caso de uso para crear viajes es obligatorio");
@@ -51,6 +55,9 @@ public class TripController {
                 this.searchTripsUseCase = Objects.requireNonNull(
                                 searchTripsUseCase,
                                 "El caso de uso para buscar viajes es obligatorio");
+                this.updateTripUseCase = Objects.requireNonNull(
+                                updateTripUseCase,
+                                "El caso de uso para actualizar viajes es obligatorio");
         }
 
         @PostMapping
@@ -107,4 +114,18 @@ public class TripController {
                                 TripWebMapper.toResponse(result));
         }
 
+        @PutMapping("/{tripId}")
+        public ResponseEntity<TripDetailResponse> updateTrip(
+                        @PathVariable UUID tripId,
+                        @RequestHeader("X-User-Id") UUID requesterId,
+                        @Valid @RequestBody UpdateTripRequest request) {
+                TripDetail updatedTrip = updateTripUseCase.update(
+                                TripWebMapper.toCommand(
+                                                tripId,
+                                                requesterId,
+                                                request));
+
+                return ResponseEntity.ok(
+                                TripWebMapper.toResponse(updatedTrip));
+        }
 }
