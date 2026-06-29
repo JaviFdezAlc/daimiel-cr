@@ -13,6 +13,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -23,13 +24,17 @@ import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.daimielcr.backend.application.port.in.trip.CancelTripCommand;
+import com.daimielcr.backend.application.port.in.trip.CancelTripUseCase;
 import com.daimielcr.backend.application.port.in.trip.CreateTripCommand;
 import com.daimielcr.backend.application.port.in.trip.CreateTripUseCase;
 import com.daimielcr.backend.application.port.in.trip.GetTripDetailUseCase;
@@ -43,6 +48,7 @@ import com.daimielcr.backend.application.port.in.trip.UpdateTripCommand;
 import com.daimielcr.backend.application.port.in.trip.UpdateTripUseCase;
 import com.daimielcr.backend.config.SecurityConfig;
 import com.daimielcr.backend.domain.exceptions.InvalidTripException;
+import com.daimielcr.backend.domain.exceptions.TripNotAvailableException;
 import com.daimielcr.backend.domain.exceptions.TripNotFoundException;
 import com.daimielcr.backend.domain.exceptions.UnauthorizedTripActionException;
 import com.daimielcr.backend.domain.exceptions.UserNotFoundException;
@@ -51,8 +57,6 @@ import com.daimielcr.backend.domain.model.trip.TripId;
 import com.daimielcr.backend.domain.model.trip.TripLocation;
 import com.daimielcr.backend.domain.model.trip.TripStatus;
 import com.daimielcr.backend.domain.model.user.UserId;
-
-
 
 @WebMvcTest(controllers = TripController.class)
 @Import(SecurityConfig.class)
@@ -74,6 +78,9 @@ class TripControllerTest {
 
         @MockitoBean
         private UpdateTripUseCase updateTripUseCase;
+
+        @MockitoBean
+        private CancelTripUseCase cancelTripUseCase;
 
         @Test
         void shouldCreateTripAndReturnCreatedResponse() throws Exception {
@@ -643,5 +650,84 @@ class TripControllerTest {
                                   "comment": "Salgo después de clase"
                                 }
                                 """;
+        }
+
+        @Test
+        void shouldCancelTripWhenRequesterIsDriver() throws Exception {
+                UUID tripUuid = UUID.fromString(
+                                "55555555-5555-5555-5555-555555555555");
+
+                UUID driverUuid = UUID.fromString(
+                                "11111111-1111-1111-1111-111111111111");
+
+                mockMvc.perform(delete("/api/v1/trips/{tripId}", tripUuid)
+                                .header("X-User-Id", driverUuid))
+                                .andExpect(status().isNoContent())
+                                .andExpect(content().string(""));
+
+                ArgumentCaptor<CancelTripCommand> commandCaptor = ArgumentCaptor.forClass(CancelTripCommand.class);
+
+                verify(cancelTripUseCase).cancel(commandCaptor.capture());
+
+                CancelTripCommand command = commandCaptor.getValue();
+
+                assertEquals(new TripId(tripUuid), command.tripId());
+                assertEquals(new UserId(driverUuid), command.requesterId());
+        }
+
+        @Test
+        void shouldReturnNotFoundWhenCancellingUnknownTrip() throws Exception {
+                UUID tripUuid = UUID.fromString(
+                                "55555555-5555-5555-5555-555555555555");
+
+                UUID driverUuid = UUID.fromString(
+                                "11111111-1111-1111-1111-111111111111");
+
+                doThrow(new TripNotFoundException(
+                                "No existe el viaje: " + tripUuid)).when(cancelTripUseCase)
+                                .cancel(any(CancelTripCommand.class));
+
+                mockMvc.perform(delete("/api/v1/trips/{tripId}", tripUuid)
+                                .header("X-User-Id", driverUuid))
+                                .andExpect(status().isNotFound())
+                                .andExpect(jsonPath("$.code").value("TRIP_NOT_FOUND"));
+        }
+
+        @Test
+        void shouldReturnForbiddenWhenRequesterIsNotTripDriverOnCancel()
+                        throws Exception {
+
+                UUID tripUuid = UUID.fromString(
+                                "55555555-5555-5555-5555-555555555555");
+
+                UUID requesterUuid = UUID.fromString(
+                                "33333333-3333-3333-3333-333333333333");
+
+                doThrow(new UnauthorizedTripActionException(
+                                "No tienes permiso para cancelar este viaje")).when(cancelTripUseCase)
+                                .cancel(any(CancelTripCommand.class));
+
+                mockMvc.perform(delete("/api/v1/trips/{tripId}", tripUuid)
+                                .header("X-User-Id", requesterUuid))
+                                .andExpect(status().isForbidden())
+                                .andExpect(jsonPath("$.code").value("FORBIDDEN"));
+        }
+
+        @Test
+        void shouldReturnConflictWhenTripCannotBeCancelled() throws Exception {
+                UUID tripUuid = UUID.fromString(
+                                "55555555-5555-5555-5555-555555555555");
+
+                UUID driverUuid = UUID.fromString(
+                                "11111111-1111-1111-1111-111111111111");
+
+                doThrow(new TripNotAvailableException(
+                                "El viaje ya no puede cancelarse")).when(cancelTripUseCase)
+                                .cancel(any(CancelTripCommand.class));
+
+                mockMvc.perform(delete("/api/v1/trips/{tripId}", tripUuid)
+                                .header("X-User-Id", driverUuid))
+                                .andExpect(status().isConflict())
+                                .andExpect(jsonPath("$.code").value("TRIP_CONFLICT"));
         }
 }
