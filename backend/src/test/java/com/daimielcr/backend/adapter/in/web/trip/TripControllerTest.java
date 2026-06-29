@@ -2,11 +2,14 @@ package com.daimielcr.backend.adapter.in.web.trip;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 import java.util.UUID;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import static org.mockito.ArgumentMatchers.any;
@@ -29,7 +32,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.daimielcr.backend.application.port.in.trip.CreateTripCommand;
 import com.daimielcr.backend.application.port.in.trip.CreateTripUseCase;
 import com.daimielcr.backend.application.port.in.trip.GetTripDetailUseCase;
+import com.daimielcr.backend.application.port.in.trip.SearchTripsQuery;
+import com.daimielcr.backend.application.port.in.trip.SearchTripsResult;
+import com.daimielcr.backend.application.port.in.trip.SearchTripsUseCase;
 import com.daimielcr.backend.application.port.in.trip.TripDetail;
+import com.daimielcr.backend.application.port.in.trip.TripSort;
+import com.daimielcr.backend.application.port.in.trip.TripSummary;
 import com.daimielcr.backend.config.SecurityConfig;
 import com.daimielcr.backend.domain.exceptions.InvalidTripException;
 import com.daimielcr.backend.domain.exceptions.TripNotFoundException;
@@ -54,6 +62,9 @@ class TripControllerTest {
 
         @MockitoBean
         private GetTripDetailUseCase getTripDetailUseCase;
+
+        @MockitoBean
+        private SearchTripsUseCase searchTripsUseCase;
 
         @Test
         void shouldCreateTripAndReturnCreatedResponse() throws Exception {
@@ -331,5 +342,143 @@ class TripControllerTest {
                                                 .value("/api/v1/trips/not-a-valid-uuid"));
 
                 verifyNoInteractions(getTripDetailUseCase);
+        }
+
+        @Test
+        void shouldSearchTripsWithProvidedFilters() throws Exception {
+                UUID tripUuid = UUID.fromString("55555555-5555-5555-5555-555555555555");
+
+                Instant departureAt = Instant.parse("2030-06-27T07:30:00Z");
+
+                SearchTripsResult result = new SearchTripsResult(
+                                List.of(
+                                                new TripSummary(
+                                                                new TripId(tripUuid),
+                                                                TripLocation.DAIMIEL,
+                                                                TripLocation.CIUDAD_REAL,
+                                                                departureAt,
+                                                                "Plaza de España, Daimiel",
+                                                                "Estación de autobuses, Ciudad Real",
+                                                                3,
+                                                                new BigDecimal("3.00"))),
+                                1,
+                                10,
+                                25,
+                                3);
+
+                when(searchTripsUseCase.search(any(SearchTripsQuery.class)))
+                                .thenReturn(result);
+
+                mockMvc.perform(get("/api/v1/trips")
+                                .param("origin", "DAIMIEL")
+                                .param("destination", "CIUDAD_REAL")
+                                .param("date", "2030-06-27")
+                                .param("requiredSeats", "2")
+                                .param("sort", "CONTRIBUTION_ASC")
+                                .param("page", "1")
+                                .param("size", "10"))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.page").value(1))
+                                .andExpect(jsonPath("$.size").value(10))
+                                .andExpect(jsonPath("$.totalElements").value(25))
+                                .andExpect(jsonPath("$.totalPages").value(3))
+                                .andExpect(jsonPath("$.trips.length()").value(1))
+                                .andExpect(jsonPath("$.trips[0].id").value(tripUuid.toString()))
+                                .andExpect(jsonPath("$.trips[0].origin").value("DAIMIEL"))
+                                .andExpect(jsonPath("$.trips[0].destination").value("CIUDAD_REAL"))
+                                .andExpect(jsonPath("$.trips[0].departureAt")
+                                                .value(departureAt.toString()))
+                                .andExpect(jsonPath("$.trips[0].departurePoint")
+                                                .value("Plaza de España, Daimiel"))
+                                .andExpect(jsonPath("$.trips[0].arrivalPoint")
+                                                .value("Estación de autobuses, Ciudad Real"))
+                                .andExpect(jsonPath("$.trips[0].availableSeats").value(3))
+                                .andExpect(jsonPath("$.trips[0].contributionAmount").value(3.0));
+
+                ArgumentCaptor<SearchTripsQuery> queryCaptor = ArgumentCaptor.forClass(SearchTripsQuery.class);
+
+                verify(searchTripsUseCase).search(queryCaptor.capture());
+
+                SearchTripsQuery query = queryCaptor.getValue();
+
+                assertEquals(TripLocation.DAIMIEL, query.origin());
+                assertEquals(TripLocation.CIUDAD_REAL, query.destination());
+                assertEquals(LocalDate.of(2030, 6, 27), query.date());
+                assertEquals(2, query.requiredSeats());
+                assertEquals(TripSort.CONTRIBUTION_ASC, query.sort());
+                assertEquals(1, query.page());
+                assertEquals(10, query.size());
+        }
+
+        @Test
+        void shouldUseDefaultSearchValuesWhenOptionalFiltersAreOmitted() throws Exception {
+                when(searchTripsUseCase.search(any(SearchTripsQuery.class)))
+                                .thenReturn(new SearchTripsResult(
+                                                List.of(),
+                                                0,
+                                                20,
+                                                0,
+                                                0));
+
+                mockMvc.perform(get("/api/v1/trips")
+                                .param("origin", "DAIMIEL")
+                                .param("destination", "CIUDAD_REAL"))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.trips.length()").value(0))
+                                .andExpect(jsonPath("$.page").value(0))
+                                .andExpect(jsonPath("$.size").value(20))
+                                .andExpect(jsonPath("$.totalElements").value(0))
+                                .andExpect(jsonPath("$.totalPages").value(0));
+
+                ArgumentCaptor<SearchTripsQuery> queryCaptor = ArgumentCaptor.forClass(SearchTripsQuery.class);
+
+                verify(searchTripsUseCase).search(queryCaptor.capture());
+
+                SearchTripsQuery query = queryCaptor.getValue();
+
+                assertNull(query.date());
+                assertEquals(1, query.requiredSeats());
+                assertEquals(TripSort.DEPARTURE_ASC, query.sort());
+                assertEquals(0, query.page());
+                assertEquals(20, query.size());
+        }
+
+        @Test
+        void shouldReturnBadRequestWhenOriginAndDestinationAreEqual() throws Exception {
+                mockMvc.perform(get("/api/v1/trips")
+                                .param("origin", "DAIMIEL")
+                                .param("destination", "DAIMIEL"))
+                                .andExpect(status().isBadRequest())
+                                .andExpect(jsonPath("$.code").value("INVALID_SEARCH_QUERY"))
+                                .andExpect(jsonPath("$.message")
+                                                .value("El origen y el destino deben ser distintos"));
+
+                verifyNoInteractions(searchTripsUseCase);
+        }
+
+        @Test
+        void shouldReturnBadRequestWhenRequiredSeatsIsZero() throws Exception {
+                mockMvc.perform(get("/api/v1/trips")
+                                .param("origin", "DAIMIEL")
+                                .param("destination", "CIUDAD_REAL")
+                                .param("requiredSeats", "0"))
+                                .andExpect(status().isBadRequest())
+                                .andExpect(jsonPath("$.code").value("INVALID_SEARCH_QUERY"))
+                                .andExpect(jsonPath("$.message")
+                                                .value("Debe solicitarse al menos una plaza"));
+
+                verifyNoInteractions(searchTripsUseCase);
+        }
+
+        @Test
+        void shouldReturnBadRequestWhenOriginIsMissing() throws Exception {
+                mockMvc.perform(get("/api/v1/trips")
+                                .param("destination", "CIUDAD_REAL"))
+                                .andExpect(status().isBadRequest())
+                                .andExpect(jsonPath("$.code").value("MISSING_PARAMETER"))
+                                .andExpect(jsonPath("$.message")
+                                                .value("Falta el parámetro obligatorio: origin"));
+
+                verifyNoInteractions(searchTripsUseCase);
         }
 }
