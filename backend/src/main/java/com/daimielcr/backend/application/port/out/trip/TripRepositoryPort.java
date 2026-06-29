@@ -10,4 +10,7 @@ public interface TripRepositoryPort {
     void save(Trip trip);
 
     Optional<Trip> findById(TripId tripId);
+
+    TripSearchPage search(TripSearchCriteria criteria);
+
 }

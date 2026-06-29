@@ -1,10 +1,13 @@
 package com.daimielcr.backend.adapter.in.web.trip;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Objects;
 
 import com.daimielcr.backend.application.port.in.trip.CreateTripCommand;
+import com.daimielcr.backend.application.port.in.trip.SearchTripsResult;
 import com.daimielcr.backend.application.port.in.trip.TripDetail;
+import com.daimielcr.backend.application.port.in.trip.TripSummary;
 import com.daimielcr.backend.domain.model.trip.TripId;
 import com.daimielcr.backend.domain.model.user.UserId;
 
@@ -15,8 +18,7 @@ public final class TripWebMapper {
 
     public static CreateTripCommand toCommand(
             CreateTripRequest request,
-            UserId driverId
-    ) {
+            UserId driverId) {
         Objects.requireNonNull(request, "La petición es obligatoria");
         Objects.requireNonNull(driverId, "El conductor es obligatorio");
 
@@ -31,8 +33,7 @@ public final class TripWebMapper {
                         : request.contributionAmount(),
                 request.departurePoint(),
                 request.arrivalPoint(),
-                request.comment()
-        );
+                request.comment());
     }
 
     public static CreateTripResponse toResponse(TripId tripId) {
@@ -58,7 +59,36 @@ public final class TripWebMapper {
                 detail.comment(),
                 detail.status(),
                 detail.createdAt(),
-                detail.updatedAt()
-        );
+                detail.updatedAt());
+    }
+
+    public static SearchTripsResponse toResponse(SearchTripsResult result) {
+        Objects.requireNonNull(result, "El resultado de búsqueda es obligatorio");
+
+        List<TripSummaryResponse> trips = result.trips()
+                .stream()
+                .map(TripWebMapper::toResponse)
+                .toList();
+
+        return new SearchTripsResponse(
+                trips,
+                result.page(),
+                result.size(),
+                result.totalElements(),
+                result.totalPages());
+    }
+
+    private static TripSummaryResponse toResponse(TripSummary summary) {
+        Objects.requireNonNull(summary, "El resumen del viaje es obligatorio");
+
+        return new TripSummaryResponse(
+                summary.id().value(),
+                summary.origin(),
+                summary.destination(),
+                summary.departureAt(),
+                summary.departurePoint(),
+                summary.arrivalPoint(),
+                summary.availableSeats(),
+                summary.contributionAmount());
     }
 }
