@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
+import com.daimielcr.backend.application.port.in.trip.CancelTripCommand;
 import com.daimielcr.backend.application.port.in.trip.CreateTripCommand;
 import com.daimielcr.backend.application.port.in.trip.SearchTripsResult;
 import com.daimielcr.backend.application.port.in.trip.TripDetail;
@@ -115,5 +116,18 @@ public final class TripWebMapper {
                                 request.departurePoint(),
                                 request.arrivalPoint(),
                                 request.comment());
+        }
+
+        public static CancelTripCommand toCancelCommand(
+                        UUID tripId,
+                        UUID requesterId) {
+                Objects.requireNonNull(tripId, "El id del viaje es obligatorio");
+                Objects.requireNonNull(
+                                requesterId,
+                                "El usuario que cancela es obligatorio");
+
+                return new CancelTripCommand(
+                                new TripId(tripId),
+                                new UserId(requesterId));
         }
 }

@@ -7,6 +7,7 @@ import java.util.UUID;
 
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -18,6 +19,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
+import com.daimielcr.backend.application.port.in.trip.CancelTripUseCase;
 import com.daimielcr.backend.application.port.in.trip.CreateTripUseCase;
 import com.daimielcr.backend.application.port.in.trip.GetTripDetailUseCase;
 import com.daimielcr.backend.application.port.in.trip.SearchTripsQuery;
@@ -40,12 +42,14 @@ public class TripController {
         private final GetTripDetailUseCase getTripDetailUseCase;
         private final SearchTripsUseCase searchTripsUseCase;
         private final UpdateTripUseCase updateTripUseCase;
+        private final CancelTripUseCase cancelTripUseCase;
 
         public TripController(
                         CreateTripUseCase createTripUseCase,
                         GetTripDetailUseCase getTripDetailUseCase,
                         SearchTripsUseCase searchTripsUseCase,
-                        UpdateTripUseCase updateTripUseCase) {
+                        UpdateTripUseCase updateTripUseCase,
+                        CancelTripUseCase cancelTripUseCase) {
                 this.createTripUseCase = Objects.requireNonNull(
                                 createTripUseCase,
                                 "El caso de uso para crear viajes es obligatorio");
@@ -58,6 +62,9 @@ public class TripController {
                 this.updateTripUseCase = Objects.requireNonNull(
                                 updateTripUseCase,
                                 "El caso de uso para actualizar viajes es obligatorio");
+                this.cancelTripUseCase = Objects.requireNonNull(
+                                cancelTripUseCase,
+                                "El caso de uso para cancelar viajes es obligatorio");
         }
 
         @PostMapping
@@ -127,5 +134,15 @@ public class TripController {
 
                 return ResponseEntity.ok(
                                 TripWebMapper.toResponse(updatedTrip));
+        }
+
+        @DeleteMapping("/{tripId}")
+        public ResponseEntity<Void> cancelTrip(
+                        @PathVariable UUID tripId,
+                        @RequestHeader("X-User-Id") UUID requesterId) {
+                cancelTripUseCase.cancel(
+                                TripWebMapper.toCancelCommand(tripId, requesterId));
+
+                return ResponseEntity.noContent().build();
         }
 }

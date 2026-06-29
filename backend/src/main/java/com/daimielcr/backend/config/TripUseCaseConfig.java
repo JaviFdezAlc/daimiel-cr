@@ -6,12 +6,14 @@ import java.time.ZoneId;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import com.daimielcr.backend.application.port.in.trip.CancelTripUseCase;
 import com.daimielcr.backend.application.port.in.trip.CreateTripUseCase;
 import com.daimielcr.backend.application.port.in.trip.GetTripDetailUseCase;
 import com.daimielcr.backend.application.port.in.trip.SearchTripsUseCase;
 import com.daimielcr.backend.application.port.in.trip.UpdateTripUseCase;
 import com.daimielcr.backend.application.port.out.trip.TripRepositoryPort;
 import com.daimielcr.backend.application.port.out.user.UserRepositoryPort;
+import com.daimielcr.backend.application.service.trip.CancelTripService;
 import com.daimielcr.backend.application.service.trip.CreateTripService;
 import com.daimielcr.backend.application.service.trip.GetTripDetailService;
 import com.daimielcr.backend.application.service.trip.SearchTripsService;
@@ -50,6 +52,15 @@ public class TripUseCaseConfig {
             TripRepositoryPort tripRepositoryPort,
             Clock clock) {
         return new UpdateTripService(
+                tripRepositoryPort,
+                clock);
+    }
+
+    @Bean
+    public CancelTripUseCase cancelTripUseCase(
+            TripRepositoryPort tripRepositoryPort,
+            Clock clock) {
+        return new CancelTripService(
                 tripRepositoryPort,
                 clock);
     }
