@@ -15,7 +15,9 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
+import com.daimielcr.backend.domain.exceptions.DuplicateRideRequestException;
 import com.daimielcr.backend.domain.exceptions.InsufficientSeatsException;
+import com.daimielcr.backend.domain.exceptions.InvalidRideRequestException;
 import com.daimielcr.backend.domain.exceptions.InvalidTripException;
 import com.daimielcr.backend.domain.exceptions.TripNotAvailableException;
 import com.daimielcr.backend.domain.exceptions.TripNotFoundException;
@@ -180,6 +182,28 @@ public class GlobalExceptionHandler {
                 return buildResponse(
                                 HttpStatus.BAD_REQUEST,
                                 "INVALID_SEARCH_QUERY",
+                                exception.getMessage(),
+                                request);
+        }
+
+        @ExceptionHandler(DuplicateRideRequestException.class)
+        public ResponseEntity<ApiErrorResponse> handleDuplicateRideRequest(
+                        DuplicateRideRequestException exception,
+                        HttpServletRequest request) {
+                return buildResponse(
+                                HttpStatus.CONFLICT,
+                                "RIDE_REQUEST_CONFLICT",
+                                exception.getMessage(),
+                                request);
+        }
+
+        @ExceptionHandler(InvalidRideRequestException.class)
+        public ResponseEntity<ApiErrorResponse> handleInvalidRideRequest(
+                        InvalidRideRequestException exception,
+                        HttpServletRequest request) {
+                return buildResponse(
+                                HttpStatus.BAD_REQUEST,
+                                "INVALID_RIDE_REQUEST",
                                 exception.getMessage(),
                                 request);
         }
