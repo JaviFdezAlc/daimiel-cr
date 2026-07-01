@@ -1,5 +1,6 @@
 package com.daimielcr.backend.adapter.out.persistence.ride_request;
 
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -53,5 +54,16 @@ public class RideRequestPersistenceAdapter
 
                 return repository.findById(rideRequestId.value())
                                 .map(RideRequestPersistenceMapper::toDomain);
+        }
+
+        @Override
+        public List<RideRequest> findAllByTripId(TripId tripId) {
+                Objects.requireNonNull(tripId, "El id del viaje es obligatorio");
+
+                return repository
+                                .findAllByTripIdOrderByCreatedAtAsc(tripId.value())
+                                .stream()
+                                .map(RideRequestPersistenceMapper::toDomain)
+                                .toList();
         }
 }

@@ -8,6 +8,7 @@ import org.springframework.context.annotation.Configuration;
 import com.daimielcr.backend.application.port.in.ride_request.AcceptRideRequestUseCase;
 import com.daimielcr.backend.application.port.in.ride_request.CancelRideRequestUseCase;
 import com.daimielcr.backend.application.port.in.ride_request.CreateRideRequestUseCase;
+import com.daimielcr.backend.application.port.in.ride_request.GetTripRideRequestsUseCase;
 import com.daimielcr.backend.application.port.in.ride_request.RejectRideRequestUseCase;
 import com.daimielcr.backend.application.port.out.ride_request.RideRequestRepositoryPort;
 import com.daimielcr.backend.application.port.out.trip.TripRepositoryPort;
@@ -15,6 +16,7 @@ import com.daimielcr.backend.application.port.out.user.UserRepositoryPort;
 import com.daimielcr.backend.application.service.ride_request.AcceptRideRequestService;
 import com.daimielcr.backend.application.service.ride_request.CancelRideRequestService;
 import com.daimielcr.backend.application.service.ride_request.CreateRideRequestService;
+import com.daimielcr.backend.application.service.ride_request.GetTripRideRequestsService;
 import com.daimielcr.backend.application.service.ride_request.RejectRideRequestService;
 
 @Configuration(proxyBeanMethods = false)
@@ -64,5 +66,14 @@ public class RideRequestUseCaseConfig {
                                 rideRequestRepositoryPort,
                                 tripRepositoryPort,
                                 clock);
+        }
+
+        @Bean
+        public GetTripRideRequestsUseCase getTripRideRequestsUseCase(
+                        RideRequestRepositoryPort rideRequestRepositoryPort,
+                        TripRepositoryPort tripRepositoryPort) {
+                return new GetTripRideRequestsService(
+                                rideRequestRepositoryPort,
+                                tripRepositoryPort);
         }
 }
