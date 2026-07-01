@@ -4,7 +4,9 @@ import java.util.Objects;
 import java.util.UUID;
 
 import com.daimielcr.backend.application.port.in.ride_request.AcceptRideRequestCommand;
+import com.daimielcr.backend.application.port.in.ride_request.CancelRideRequestCommand;
 import com.daimielcr.backend.application.port.in.ride_request.CreateRideRequestCommand;
+import com.daimielcr.backend.application.port.in.ride_request.RejectRideRequestCommand;
 import com.daimielcr.backend.domain.model.ride_request.RideRequestId;
 import com.daimielcr.backend.domain.model.trip.TripId;
 import com.daimielcr.backend.domain.model.user.UserId;
@@ -52,6 +54,36 @@ public final class RideRequestWebMapper {
                                 "El usuario que acepta es obligatorio");
 
                 return new AcceptRideRequestCommand(
+                                new RideRequestId(rideRequestId),
+                                new UserId(requesterId));
+        }
+
+        public static RejectRideRequestCommand toRejectCommand(
+                        UUID rideRequestId,
+                        UUID requesterId) {
+                Objects.requireNonNull(
+                                rideRequestId,
+                                "El id de la solicitud es obligatorio");
+                Objects.requireNonNull(
+                                requesterId,
+                                "El usuario que rechaza es obligatorio");
+
+                return new RejectRideRequestCommand(
+                                new RideRequestId(rideRequestId),
+                                new UserId(requesterId));
+        }
+
+        public static CancelRideRequestCommand toCancelCommand(
+                        UUID rideRequestId,
+                        UUID requesterId) {
+                Objects.requireNonNull(
+                                rideRequestId,
+                                "El id de la solicitud es obligatorio");
+                Objects.requireNonNull(
+                                requesterId,
+                                "El usuario que cancela es obligatorio");
+
+                return new CancelRideRequestCommand(
                                 new RideRequestId(rideRequestId),
                                 new UserId(requesterId));
         }

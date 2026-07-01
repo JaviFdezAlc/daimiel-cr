@@ -19,12 +19,15 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.daimielcr.backend.application.port.in.ride_request.AcceptRideRequestCommand;
 import com.daimielcr.backend.application.port.in.ride_request.AcceptRideRequestUseCase;
+import com.daimielcr.backend.application.port.in.ride_request.CancelRideRequestCommand;
+import com.daimielcr.backend.application.port.in.ride_request.CancelRideRequestUseCase;
 import com.daimielcr.backend.application.port.in.ride_request.RejectRideRequestCommand;
 import com.daimielcr.backend.application.port.in.ride_request.RejectRideRequestUseCase;
 import com.daimielcr.backend.config.SecurityConfig;
 import com.daimielcr.backend.domain.exceptions.InsufficientSeatsException;
 import com.daimielcr.backend.domain.exceptions.InvalidRideRequestStateException;
 import com.daimielcr.backend.domain.exceptions.RideRequestNotFoundException;
+import com.daimielcr.backend.domain.exceptions.UnauthorizedRideRequestActionException;
 import com.daimielcr.backend.domain.exceptions.UnauthorizedTripActionException;
 import com.daimielcr.backend.domain.model.ride_request.RideRequestId;
 import com.daimielcr.backend.domain.model.user.UserId;
@@ -40,6 +43,9 @@ class RideRequestActionControllerTest {
 
         @MockitoBean
         private RejectRideRequestUseCase rejectRideRequestUseCase;
+
+        @MockitoBean
+        private CancelRideRequestUseCase cancelRideRequestUseCase;
 
         @Test
         void shouldAcceptRideRequest() throws Exception {
@@ -255,6 +261,81 @@ class RideRequestActionControllerTest {
                                 "/api/v1/ride-requests/{rideRequestId}/reject",
                                 rideRequestUuid)
                                 .header("X-User-Id", driverUuid))
+                                .andExpect(status().isConflict())
+                                .andExpect(jsonPath("$.code")
+                                                .value("RIDE_REQUEST_CONFLICT"));
+        }
+
+        @Test
+        void shouldCancelRideRequest() throws Exception {
+                UUID rideRequestUuid = UUID.fromString(
+                                "11111111-1111-1111-1111-111111111111");
+
+                UUID passengerUuid = UUID.fromString(
+                                "44444444-4444-4444-4444-444444444444");
+
+                mockMvc.perform(post(
+                                "/api/v1/ride-requests/{rideRequestId}/cancel",
+                                rideRequestUuid)
+                                .header("X-User-Id", passengerUuid))
+                                .andExpect(status().isNoContent())
+                                .andExpect(content().string(""));
+
+                var commandCaptor = org.mockito.ArgumentCaptor.forClass(
+                                CancelRideRequestCommand.class);
+
+                verify(cancelRideRequestUseCase).cancel(commandCaptor.capture());
+
+                CancelRideRequestCommand command = commandCaptor.getValue();
+
+                assertEquals(
+                                new RideRequestId(rideRequestUuid),
+                                command.rideRequestId());
+                assertEquals(
+                                new UserId(passengerUuid),
+                                command.requesterId());
+        }
+
+        @Test
+        void shouldReturnForbiddenWhenRequesterIsNotPassengerOnCancel()
+                        throws Exception {
+
+                UUID rideRequestUuid = UUID.fromString(
+                                "11111111-1111-1111-1111-111111111111");
+
+                UUID otherUserUuid = UUID.fromString(
+                                "55555555-5555-5555-5555-555555555555");
+
+                doThrow(new UnauthorizedRideRequestActionException(
+                                "Solo el pasajero puede cancelar esta solicitud")).when(cancelRideRequestUseCase)
+                                .cancel(any(CancelRideRequestCommand.class));
+
+                mockMvc.perform(post(
+                                "/api/v1/ride-requests/{rideRequestId}/cancel",
+                                rideRequestUuid)
+                                .header("X-User-Id", otherUserUuid))
+                                .andExpect(status().isForbidden())
+                                .andExpect(jsonPath("$.code").value("FORBIDDEN"));
+        }
+
+        @Test
+        void shouldReturnConflictWhenCancellingResolvedRideRequest()
+                        throws Exception {
+
+                UUID rideRequestUuid = UUID.fromString(
+                                "11111111-1111-1111-1111-111111111111");
+
+                UUID passengerUuid = UUID.fromString(
+                                "44444444-4444-4444-4444-444444444444");
+
+                doThrow(new InvalidRideRequestStateException(
+                                "La solicitud no puede cancelarse en su estado actual")).when(cancelRideRequestUseCase)
+                                .cancel(any(CancelRideRequestCommand.class));
+
+                mockMvc.perform(post(
+                                "/api/v1/ride-requests/{rideRequestId}/cancel",
+                                rideRequestUuid)
+                                .header("X-User-Id", passengerUuid))
                                 .andExpect(status().isConflict())
                                 .andExpect(jsonPath("$.code")
                                                 .value("RIDE_REQUEST_CONFLICT"));
