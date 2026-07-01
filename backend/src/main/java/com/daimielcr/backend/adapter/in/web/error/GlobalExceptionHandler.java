@@ -24,6 +24,7 @@ import com.daimielcr.backend.domain.exceptions.InvalidTripException;
 import com.daimielcr.backend.domain.exceptions.RideRequestNotFoundException;
 import com.daimielcr.backend.domain.exceptions.TripNotAvailableException;
 import com.daimielcr.backend.domain.exceptions.TripNotFoundException;
+import com.daimielcr.backend.domain.exceptions.UnauthorizedRideRequestActionException;
 import com.daimielcr.backend.domain.exceptions.UnauthorizedTripActionException;
 import com.daimielcr.backend.domain.exceptions.UserNotFoundException;
 import com.daimielcr.backend.domain.exceptions.UserPhoneNotVerifiedException;
@@ -241,6 +242,17 @@ public class GlobalExceptionHandler {
                 return buildResponse(
                                 HttpStatus.CONFLICT,
                                 "RIDE_REQUEST_CONFLICT",
+                                exception.getMessage(),
+                                request);
+        }
+
+        @ExceptionHandler(UnauthorizedRideRequestActionException.class)
+        public ResponseEntity<ApiErrorResponse> handleUnauthorizedRideRequestAction(
+                        UnauthorizedRideRequestActionException exception,
+                        HttpServletRequest request) {
+                return buildResponse(
+                                HttpStatus.FORBIDDEN,
+                                "FORBIDDEN",
                                 exception.getMessage(),
                                 request);
         }
