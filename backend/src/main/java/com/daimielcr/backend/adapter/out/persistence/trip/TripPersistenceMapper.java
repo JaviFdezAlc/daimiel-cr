@@ -32,8 +32,8 @@ public final class TripPersistenceMapper {
                 trip.comment(),
                 trip.status(),
                 trip.createdAt(),
-                trip.updatedAt()
-        );
+                trip.updatedAt(),
+                trip.version());
     }
 
     public static Trip toDomain(TripJpaEntity entity) {
@@ -52,7 +52,7 @@ public final class TripPersistenceMapper {
                 entity.getComment(),
                 entity.getStatus(),
                 entity.getCreatedAt(),
-                entity.getUpdatedAt()
-        );
+                entity.getUpdatedAt(),
+                entity.getVersion());
     }
 }

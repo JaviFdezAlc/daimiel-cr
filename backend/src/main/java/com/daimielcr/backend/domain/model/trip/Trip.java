@@ -28,6 +28,7 @@ public class Trip {
     private TripStatus status;
     private final Instant createdAt;
     private Instant updatedAt;
+    private final Long version;
 
     private Trip(
             TripId id,
@@ -42,51 +43,44 @@ public class Trip {
             String comment,
             TripStatus status,
             Instant createdAt,
-            Instant updatedAt
-    ) {
+            Instant updatedAt,
+            Long version) {
         this.id = Objects.requireNonNull(id, "El id del viaje es obligatorio");
         this.driverId = Objects.requireNonNull(driverId, "El conductor es obligatorio");
         this.route = Objects.requireNonNull(route, "La ruta es obligatoria");
         this.departureAt = Objects.requireNonNull(
                 departureAt,
-                "La salida es obligatoria"
-        );
+                "La salida es obligatoria");
         this.totalSeats = Objects.requireNonNull(
                 totalSeats,
-                "Las plazas totales son obligatorias"
-        );
+                "Las plazas totales son obligatorias");
         this.availableSeats = Objects.requireNonNull(
                 availableSeats,
-                "Las plazas disponibles son obligatorias"
-        );
+                "Las plazas disponibles son obligatorias");
         this.contributionAmount = Objects.requireNonNull(
                 contributionAmount,
-                "La contribución es obligatoria"
-        );
+                "La contribución es obligatoria");
         this.departurePoint = normalizeOptionalText(
                 departurePoint,
                 "El punto de salida",
-                MAX_POINT_LENGTH
-        );
+                MAX_POINT_LENGTH);
         this.arrivalPoint = normalizeOptionalText(
                 arrivalPoint,
                 "El punto de llegada",
-                MAX_POINT_LENGTH
-        );
+                MAX_POINT_LENGTH);
         this.comment = normalizeOptionalText(
                 comment,
                 "El comentario",
-                MAX_COMMENT_LENGTH
-        );
+                MAX_COMMENT_LENGTH);
         this.status = Objects.requireNonNull(status, "El estado es obligatorio");
         this.createdAt = Objects.requireNonNull(
                 createdAt,
-                "La fecha de creación es obligatoria"
-        );
+                "La fecha de creación es obligatoria");
         this.updatedAt = Objects.requireNonNull(
                 updatedAt,
-                "La fecha de actualización es obligatoria"
-        );
+                "La fecha de actualización es obligatoria");
+
+        this.version = version;
 
         validateCapacityInvariant();
         validateStatusInvariant();
@@ -102,22 +96,19 @@ public class Trip {
             String departurePoint,
             String arrivalPoint,
             String comment,
-            Instant now
-    ) {
+            Instant now) {
         Objects.requireNonNull(totalSeats, "Las plazas totales son obligatorias");
         Objects.requireNonNull(departureAt, "La salida es obligatoria");
         Objects.requireNonNull(now, "La fecha actual es obligatoria");
 
         if (totalSeats.isZero()) {
             throw new InvalidTripException(
-                    "Un viaje debe ofrecer al menos una plaza"
-            );
+                    "Un viaje debe ofrecer al menos una plaza");
         }
 
         if (!departureAt.isAfter(now)) {
             throw new InvalidTripException(
-                    "La salida debe estar en el futuro"
-            );
+                    "La salida debe estar en el futuro");
         }
 
         return new Trip(
@@ -133,8 +124,8 @@ public class Trip {
                 comment,
                 TripStatus.ACTIVE,
                 now,
-                now
-        );
+                now,
+                null);
     }
 
     public static Trip restore(
@@ -150,8 +141,39 @@ public class Trip {
             String comment,
             TripStatus status,
             Instant createdAt,
-            Instant updatedAt
-    ) {
+            Instant updatedAt) {
+        return restore(
+                id,
+                driverId,
+                route,
+                departureAt,
+                totalSeats,
+                availableSeats,
+                contributionAmount,
+                departurePoint,
+                arrivalPoint,
+                comment,
+                status,
+                createdAt,
+                updatedAt,
+                0L);
+    }
+
+    public static Trip restore(
+            TripId id,
+            UserId driverId,
+            Route route,
+            DepartureAt departureAt,
+            SeatCount totalSeats,
+            SeatCount availableSeats,
+            ContributionAmount contributionAmount,
+            String departurePoint,
+            String arrivalPoint,
+            String comment,
+            TripStatus status,
+            Instant createdAt,
+            Instant updatedAt,
+            Long version) {
         return new Trip(
                 id,
                 driverId,
@@ -165,8 +187,10 @@ public class Trip {
                 comment,
                 status,
                 createdAt,
-                updatedAt
-        );
+                updatedAt,
+                Objects.requireNonNull(
+                        version,
+                        "La versión del viaje es obligatoria"));
     }
 
     public void updateDetails(
@@ -178,8 +202,7 @@ public class Trip {
             String departurePoint,
             String arrivalPoint,
             String comment,
-            Instant now
-    ) {
+            Instant now) {
         Objects.requireNonNull(route, "La ruta es obligatoria");
         Objects.requireNonNull(departureAt, "La salida es obligatoria");
         Objects.requireNonNull(newTotalSeats, "Las plazas son obligatorias");
@@ -191,46 +214,39 @@ public class Trip {
 
         if (!departureAt.isAfter(now)) {
             throw new InvalidTripException(
-                    "La salida debe estar en el futuro"
-            );
+                    "La salida debe estar en el futuro");
         }
 
         if (newTotalSeats.isZero()) {
             throw new InvalidTripException(
-                    "Un viaje debe ofrecer al menos una plaza"
-            );
+                    "Un viaje debe ofrecer al menos una plaza");
         }
 
         int occupiedSeats = occupiedSeats().value();
 
         if (newTotalSeats.value() < occupiedSeats) {
             throw new InvalidTripException(
-                    "No se pueden reducir las plazas por debajo de las ya ocupadas"
-            );
+                    "No se pueden reducir las plazas por debajo de las ya ocupadas");
         }
 
         this.route = route;
         this.departureAt = departureAt;
         this.totalSeats = newTotalSeats;
         this.availableSeats = new SeatCount(
-                newTotalSeats.value() - occupiedSeats
-        );
+                newTotalSeats.value() - occupiedSeats);
         this.contributionAmount = contributionAmount;
         this.departurePoint = normalizeOptionalText(
                 departurePoint,
                 "El punto de salida",
-                MAX_POINT_LENGTH
-        );
+                MAX_POINT_LENGTH);
         this.arrivalPoint = normalizeOptionalText(
                 arrivalPoint,
                 "El punto de llegada",
-                MAX_POINT_LENGTH
-        );
+                MAX_POINT_LENGTH);
         this.comment = normalizeOptionalText(
                 comment,
                 "El comentario",
-                MAX_COMMENT_LENGTH
-        );
+                MAX_COMMENT_LENGTH);
         this.status = availableSeats.isZero()
                 ? TripStatus.FULL
                 : TripStatus.ACTIVE;
@@ -245,19 +261,16 @@ public class Trip {
 
         if (!seats.isPositive()) {
             throw new InvalidTripException(
-                    "La solicitud debe incluir al menos una plaza"
-            );
+                    "La solicitud debe incluir al menos una plaza");
         }
 
         if (seats.value() > availableSeats.value()) {
             throw new InsufficientSeatsException(
-                    "No hay suficientes plazas disponibles"
-            );
+                    "No hay suficientes plazas disponibles");
         }
 
         this.availableSeats = new SeatCount(
-                availableSeats.value() - seats.value()
-        );
+                availableSeats.value() - seats.value());
 
         if (availableSeats.isZero()) {
             this.status = TripStatus.FULL;
@@ -274,21 +287,18 @@ public class Trip {
 
         if (!seats.isPositive()) {
             throw new InvalidTripException(
-                    "Las plazas a liberar deben ser mayores que cero"
-            );
+                    "Las plazas a liberar deben ser mayores que cero");
         }
 
         int occupiedSeats = occupiedSeats().value();
 
         if (seats.value() > occupiedSeats) {
             throw new InvalidTripException(
-                    "No se pueden liberar más plazas de las ocupadas"
-            );
+                    "No se pueden liberar más plazas de las ocupadas");
         }
 
         this.availableSeats = new SeatCount(
-                availableSeats.value() + seats.value()
-        );
+                availableSeats.value() + seats.value());
         this.status = TripStatus.ACTIVE;
         this.updatedAt = now;
     }
@@ -310,20 +320,17 @@ public class Trip {
 
         if (status == TripStatus.CANCELLED) {
             throw new TripNotAvailableException(
-                    "No se puede finalizar un viaje cancelado"
-            );
+                    "No se puede finalizar un viaje cancelado");
         }
 
         if (status == TripStatus.FINISHED) {
             throw new TripNotAvailableException(
-                    "El viaje ya está finalizado"
-            );
+                    "El viaje ya está finalizado");
         }
 
         if (!departureAt.hasStartedAt(now)) {
             throw new TripNotAvailableException(
-                    "No se puede finalizar un viaje antes de su salida"
-            );
+                    "No se puede finalizar un viaje antes de su salida");
         }
 
         this.status = TripStatus.FINISHED;
@@ -344,73 +351,63 @@ public class Trip {
 
     public SeatCount occupiedSeats() {
         return new SeatCount(
-                totalSeats.value() - availableSeats.value()
-        );
+                totalSeats.value() - availableSeats.value());
     }
 
     private void ensureDriver(UserId requesterId) {
         if (!driverId.equals(requesterId)) {
             throw new UnauthorizedTripActionException(
-                    "Solo el conductor puede modificar este viaje"
-            );
+                    "Solo el conductor puede modificar este viaje");
         }
     }
 
     private void ensureEditable(Instant now) {
         if (status != TripStatus.ACTIVE && status != TripStatus.FULL) {
             throw new TripNotAvailableException(
-                    "El viaje no puede modificarse en su estado actual"
-            );
+                    "El viaje no puede modificarse en su estado actual");
         }
 
         if (!departureAt.isAfter(now)) {
             throw new TripNotAvailableException(
-                    "No se puede modificar un viaje cuya salida ya ha comenzado"
-            );
+                    "No se puede modificar un viaje cuya salida ya ha comenzado");
         }
     }
 
     private void ensureAcceptsRequests(Instant now) {
         if (!canAcceptRequestsAt(now)) {
             throw new TripNotAvailableException(
-                    "El viaje no acepta nuevas solicitudes"
-            );
+                    "El viaje no acepta nuevas solicitudes");
         }
     }
 
     private void validateCapacityInvariant() {
         if (totalSeats.isZero()) {
             throw new InvalidTripException(
-                    "Un viaje debe tener al menos una plaza"
-            );
+                    "Un viaje debe tener al menos una plaza");
         }
 
         if (availableSeats.value() > totalSeats.value()) {
             throw new InvalidTripException(
-                    "Las plazas disponibles no pueden superar las plazas totales"
-            );
+                    "Las plazas disponibles no pueden superar las plazas totales");
         }
     }
 
     private void validateStatusInvariant() {
         if (status == TripStatus.ACTIVE && availableSeats.isZero()) {
             throw new InvalidTripException(
-                    "Un viaje activo debe tener plazas disponibles"
-            );
+                    "Un viaje activo debe tener plazas disponibles");
         }
 
         if (status == TripStatus.FULL && availableSeats.isPositive()) {
             throw new InvalidTripException(
-                    "Un viaje completo no puede tener plazas disponibles"
-            );
+                    "Un viaje completo no puede tener plazas disponibles");
         }
     }
 
     private static String normalizeOptionalText(
             String value,
             String fieldName,
-            int maxLength
-    ) {
+            int maxLength) {
         if (value == null || value.isBlank()) {
             return null;
         }
@@ -420,8 +417,7 @@ public class Trip {
         if (normalized.length() > maxLength) {
             throw new InvalidTripException(
                     "%s no puede superar %d caracteres"
-                            .formatted(fieldName, maxLength)
-            );
+                            .formatted(fieldName, maxLength));
         }
 
         return normalized;
@@ -477,5 +473,9 @@ public class Trip {
 
     public Instant updatedAt() {
         return updatedAt;
+    }
+
+    public Long version() {
+        return version;
     }
 }

@@ -4,6 +4,7 @@ import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -18,7 +19,9 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 import com.daimielcr.backend.domain.exceptions.DuplicateRideRequestException;
 import com.daimielcr.backend.domain.exceptions.InsufficientSeatsException;
 import com.daimielcr.backend.domain.exceptions.InvalidRideRequestException;
+import com.daimielcr.backend.domain.exceptions.InvalidRideRequestStateException;
 import com.daimielcr.backend.domain.exceptions.InvalidTripException;
+import com.daimielcr.backend.domain.exceptions.RideRequestNotFoundException;
 import com.daimielcr.backend.domain.exceptions.TripNotAvailableException;
 import com.daimielcr.backend.domain.exceptions.TripNotFoundException;
 import com.daimielcr.backend.domain.exceptions.UnauthorizedTripActionException;
@@ -204,6 +207,40 @@ public class GlobalExceptionHandler {
                 return buildResponse(
                                 HttpStatus.BAD_REQUEST,
                                 "INVALID_RIDE_REQUEST",
+                                exception.getMessage(),
+                                request);
+        }
+
+        @ExceptionHandler(OptimisticLockingFailureException.class)
+        public ResponseEntity<ApiErrorResponse> handleOptimisticLockingFailure(
+                        OptimisticLockingFailureException exception,
+                        HttpServletRequest request) {
+                return buildResponse(
+                                HttpStatus.CONFLICT,
+                                "TRIP_CONFLICT",
+                                "El viaje ha cambiado mientras se procesaba la operación. "
+                                                + "Actualiza la información e inténtalo de nuevo.",
+                                request);
+        }
+
+        @ExceptionHandler(RideRequestNotFoundException.class)
+        public ResponseEntity<ApiErrorResponse> handleRideRequestNotFound(
+                        RideRequestNotFoundException exception,
+                        HttpServletRequest request) {
+                return buildResponse(
+                                HttpStatus.NOT_FOUND,
+                                "RIDE_REQUEST_NOT_FOUND",
+                                exception.getMessage(),
+                                request);
+        }
+
+        @ExceptionHandler(InvalidRideRequestStateException.class)
+        public ResponseEntity<ApiErrorResponse> handleInvalidRideRequestState(
+                        InvalidRideRequestStateException exception,
+                        HttpServletRequest request) {
+                return buildResponse(
+                                HttpStatus.CONFLICT,
+                                "RIDE_REQUEST_CONFLICT",
                                 exception.getMessage(),
                                 request);
         }

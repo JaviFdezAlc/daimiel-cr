@@ -14,6 +14,7 @@ import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.Version;
 
 @Entity
 @Table(name = "trips")
@@ -22,6 +23,10 @@ public class TripJpaEntity {
     @Id
     @Column(name = "id", nullable = false, updatable = false)
     private UUID id;
+
+    @Version
+    @Column(name = "version", nullable = false)
+    private Long version;
 
     @Column(name = "driver_id", nullable = false, updatable = false)
     private UUID driverId;
@@ -83,8 +88,8 @@ public class TripJpaEntity {
             String comment,
             TripStatus status,
             Instant createdAt,
-            Instant updatedAt
-    ) {
+            Instant updatedAt,
+            Long version) {
         this.id = Objects.requireNonNull(id);
         this.driverId = Objects.requireNonNull(driverId);
         this.origin = Objects.requireNonNull(origin);
@@ -99,6 +104,7 @@ public class TripJpaEntity {
         this.status = Objects.requireNonNull(status);
         this.createdAt = Objects.requireNonNull(createdAt);
         this.updatedAt = Objects.requireNonNull(updatedAt);
+        this.version = version;
     }
 
     public UUID getId() {
@@ -155,5 +161,9 @@ public class TripJpaEntity {
 
     public Instant getUpdatedAt() {
         return updatedAt;
+    }
+
+    public Long getVersion() {
+        return version;
     }
 }
