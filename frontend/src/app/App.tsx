@@ -8,6 +8,8 @@ import {
 } from "react";
 import { SiteHeader } from "./layout/SiteHeader";
 import type { AppView } from "./navigation/app-view";
+import { ArrowIcon } from "../shared/icons/ArrowIcon";
+import { HomeHero } from "../features/home/components/HomeHero";
 
 type Sponsor = {
   name: string;
@@ -238,13 +240,6 @@ const getDayOffset = (dateKey: string, baseDateKey: string) => {
   );
 };
 
-
-const ArrowIcon = () => (
-  <svg aria-hidden="true" viewBox="0 0 24 24" focusable="false">
-    <path d="M5 12h14m-5-5 5 5-5 5" />
-  </svg>
-);
-
 const SwitchIcon = () => (
   <svg aria-hidden="true" viewBox="0 0 24 24" focusable="false">
     <path d="M7 7h10m0 0-3-3m3 3-3 3" />
@@ -460,27 +455,11 @@ function App() {
             onCloseMobileMenu={() => setIsMobileMenuOpen(false)}
           />
 
-          <div className="hero-content" aria-hidden={activeView !== "home"}>
-            <p className="eyebrow">Viajes compartidos locales</p>
-            <h1 id="hero-title">Muevete entre Daimiel y Ciudad Real</h1>
-            <div className="hero-actions" aria-label="Acciones principales">
-              <button
-                className="primary-link"
-                type="button"
-                onClick={showSearchView}
-              >
-                Buscar viaje
-                <ArrowIcon />
-              </button>
-              <button
-                className="secondary-link"
-                type="button"
-                onClick={showPublishView}
-              >
-                Publicar salida
-              </button>
-            </div>
-          </div>
+          <HomeHero
+            isVisible={activeView === "home"}
+            onSearchTrips={showSearchView}
+            onPublishTrip={showPublishView}
+          />
 
           <section
             className="search-view"
