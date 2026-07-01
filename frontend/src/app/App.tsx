@@ -10,10 +10,7 @@ import { SiteHeader } from "./layout/SiteHeader";
 import type { AppView } from "./navigation/app-view";
 import { ArrowIcon } from "../shared/icons/ArrowIcon";
 import { HomeHero } from "../features/home/components/HomeHero";
-
-type Sponsor = {
-  name: string;
-};
+import { SponsorsStrip } from "../features/home/components/SponsorsStrip";
 
 type SortKey = "earliest" | "price" | "duration";
 
@@ -45,19 +42,6 @@ type Trip = {
   dayOffsets: number[];
   tags: string[];
 };
-
-const sponsors: Sponsor[] = [
-  { name: "Plaza Mayor" },
-  { name: "Taller El Carmen" },
-  { name: "Cervantes" },
-  { name: "La Vega" },
-  { name: "Autoescuela Daimiel" },
-  { name: "Casa Azuer" },
-  { name: "Tablas Cafe" },
-  { name: "Ruta 430" },
-];
-
-const sponsorLoop = [...sponsors, ...sponsors];
 
 const trips: Trip[] = [
   {
@@ -1216,26 +1200,7 @@ function App() {
               )}
             </div>
           </section>
-
-          <div
-            className="sponsors-strip"
-            aria-label="Patrocinadores locales"
-            aria-hidden={activeView !== "home"}
-          >
-            <div className="sponsor-marquee">
-              <div className="sponsor-track">
-                {sponsorLoop.map((sponsor, index) => (
-                  <a
-                    className="sponsor-logo"
-                    href="/"
-                    key={`${sponsor.name}-${index}`}
-                  >
-                    {sponsor.name}
-                  </a>
-                ))}
-              </div>
-            </div>
-          </div>
+          <SponsorsStrip isVisible={activeView === "home"} />
         </div>
       </section>
     </main>
