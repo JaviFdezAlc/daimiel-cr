@@ -11,9 +11,9 @@ import type { AppView } from "./navigation/app-view";
 import { ArrowIcon } from "../shared/icons/ArrowIcon";
 import { HomeHero } from "../features/home/components/HomeHero";
 import { SponsorsStrip } from "../features/home/components/SponsorsStrip";
-import { mockTrips } from '../features/trip-search/mocks/trips'
-import type { TripSearchSort } from '../features/trip-search/model/trip-search'
-
+import { mockTrips } from "../features/trip-search/mocks/trips";
+import type { TripSearchSort } from "../features/trip-search/model/trip-search";
+import { filterTrips } from "../features/trip-search/lib/filterTrips";
 
 type PublishDraft = {
   origin: string;
@@ -146,7 +146,7 @@ function App() {
   const [publishDraft, setPublishDraft] =
     useState<PublishDraft>(initialPublishDraft);
   const [calendarCursor, setCalendarCursor] = useState(calendarMinMonth);
-  const [sortKey, setSortKey] = useState<TripSearchSort>('earliest')
+  const [sortKey, setSortKey] = useState<TripSearchSort>("earliest");
   const [verifiedOnly, setVerifiedOnly] = useState(false);
   const [searchDate, setSearchDate] = useState(() => getDateKey(new Date()));
   const [minSeats, setMinSeats] = useState(1);
@@ -179,21 +179,13 @@ function App() {
   const visibleTrips = useMemo(() => {
     const searchDayOffset = getDayOffset(searchDate, todayKey);
 
-    return mockTrips
-      .filter((trip) => trip.dayOffsets.includes(searchDayOffset))
-      .filter((trip) => !verifiedOnly || trip.verified)
-      .filter((trip) => trip.seats >= minSeats)
-      .toSorted((firstTrip, secondTrip) => {
-        if (sortKey === "price") {
-          return firstTrip.price - secondTrip.price;
-        }
-
-        if (sortKey === "duration") {
-          return firstTrip.durationMinutes - secondTrip.durationMinutes;
-        }
-
-        return firstTrip.departureTime.localeCompare(secondTrip.departureTime);
-      });
+    return filterTrips({
+      trips: mockTrips,
+      dayOffset: searchDayOffset,
+      minSeats,
+      verifiedOnly,
+      sort: sortKey,
+    });
   }, [minSeats, searchDate, sortKey, todayKey, verifiedOnly]);
 
   const navigateTo = (view: AppView) => {
