@@ -11,8 +11,9 @@ import type { AppView } from "./navigation/app-view";
 import { ArrowIcon } from "../shared/icons/ArrowIcon";
 import { HomeHero } from "../features/home/components/HomeHero";
 import { SponsorsStrip } from "../features/home/components/SponsorsStrip";
+import { mockTrips } from '../features/trip-search/mocks/trips'
+import type { TripSearchSort } from '../features/trip-search/model/trip-search'
 
-type SortKey = "earliest" | "price" | "duration";
 
 type PublishDraft = {
   origin: string;
@@ -23,123 +24,6 @@ type PublishDraft = {
   seats: number;
   price: string;
 };
-
-type Trip = {
-  id: number;
-  departureTime: string;
-  arrivalTime: string;
-  duration: string;
-  durationMinutes: number;
-  from: string;
-  to: string;
-  driver: string;
-  driverAvatarUrl: string;
-  rating: string;
-  price: number;
-  priceLabel: string;
-  seats: number;
-  verified: boolean;
-  dayOffsets: number[];
-  tags: string[];
-};
-
-const trips: Trip[] = [
-  {
-    id: 1,
-    departureTime: "07:15",
-    arrivalTime: "07:48",
-    duration: "33 min",
-    durationMinutes: 33,
-    from: "Daimiel centro",
-    to: "Ciudad Real AVE",
-    driver: "Lucia",
-    driverAvatarUrl:
-      "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=96&h=96&q=80",
-    rating: "4,9",
-    price: 4.8,
-    priceLabel: "4,80 EUR",
-    seats: 2,
-    verified: true,
-    dayOffsets: [0, 1, 2],
-    tags: ["Reserva rapida", "2 plazas"],
-  },
-  {
-    id: 2,
-    departureTime: "07:40",
-    arrivalTime: "08:18",
-    duration: "38 min",
-    durationMinutes: 38,
-    from: "Estacion de Daimiel",
-    to: "Campus Ciudad Real",
-    driver: "Mario",
-    driverAvatarUrl:
-      "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=96&h=96&q=80",
-    rating: "5",
-    price: 3.9,
-    priceLabel: "3,90 EUR",
-    seats: 1,
-    verified: false,
-    dayOffsets: [0],
-    tags: ["Economico", "1 plaza"],
-  },
-  {
-    id: 3,
-    departureTime: "08:05",
-    arrivalTime: "08:39",
-    duration: "34 min",
-    durationMinutes: 34,
-    from: "Daimiel norte",
-    to: "Hospital General",
-    driver: "Ana",
-    driverAvatarUrl:
-      "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=96&h=96&q=80",
-    rating: "4,8",
-    price: 5.2,
-    priceLabel: "5,20 EUR",
-    seats: 3,
-    verified: true,
-    dayOffsets: [0, 2],
-    tags: ["Verificado", "Max. 2 atras"],
-  },
-  {
-    id: 4,
-    departureTime: "14:20",
-    arrivalTime: "14:55",
-    duration: "35 min",
-    durationMinutes: 35,
-    from: "Plaza de Espana",
-    to: "Ciudad Real centro",
-    driver: "Ruben",
-    driverAvatarUrl:
-      "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=96&h=96&q=80",
-    rating: "4,7",
-    price: 4.4,
-    priceLabel: "4,40 EUR",
-    seats: 2,
-    verified: true,
-    dayOffsets: [0, 1],
-    tags: ["Aire acondicionado", "2 plazas"],
-  },
-  {
-    id: 5,
-    departureTime: "18:10",
-    arrivalTime: "18:46",
-    duration: "36 min",
-    durationMinutes: 36,
-    from: "Daimiel sur",
-    to: "Puerta de Toledo",
-    driver: "Carmen",
-    driverAvatarUrl:
-      "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=96&h=96&q=80",
-    rating: "5",
-    price: 4.2,
-    priceLabel: "4,20 EUR",
-    seats: 4,
-    verified: false,
-    dayOffsets: [1, 3],
-    tags: ["Flexible", "4 plazas"],
-  },
-];
 
 const publishSteps = ["Ruta", "Fecha", "Hora", "Plazas", "Precio", "Resumen"];
 const weekDays = ["Dom", "Lun", "Mar", "Mie", "Jue", "Vie", "Sab"];
@@ -262,7 +146,7 @@ function App() {
   const [publishDraft, setPublishDraft] =
     useState<PublishDraft>(initialPublishDraft);
   const [calendarCursor, setCalendarCursor] = useState(calendarMinMonth);
-  const [sortKey, setSortKey] = useState<SortKey>("earliest");
+  const [sortKey, setSortKey] = useState<TripSearchSort>('earliest')
   const [verifiedOnly, setVerifiedOnly] = useState(false);
   const [searchDate, setSearchDate] = useState(() => getDateKey(new Date()));
   const [minSeats, setMinSeats] = useState(1);
@@ -295,7 +179,7 @@ function App() {
   const visibleTrips = useMemo(() => {
     const searchDayOffset = getDayOffset(searchDate, todayKey);
 
-    return trips
+    return mockTrips
       .filter((trip) => trip.dayOffsets.includes(searchDayOffset))
       .filter((trip) => !verifiedOnly || trip.verified)
       .filter((trip) => trip.seats >= minSeats)
