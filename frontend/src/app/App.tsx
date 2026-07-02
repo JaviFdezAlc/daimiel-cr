@@ -15,41 +15,22 @@ import { mockTrips } from "../features/trip-search/mocks/trips";
 import type { TripSearchSort } from "../features/trip-search/model/trip-search";
 import { filterTrips } from "../features/trip-search/lib/filterTrips";
 import {
-  addMonths,
-  getCalendarMonth,
   getDateFromKey,
   getDateKey,
   getDayOffset,
   getMonthLabel,
   getReadableDate,
-  isBeforeMonth,
   weekDays,
-} from '../shared/lib/date'
+} from "../shared/lib/date";
 
-type PublishDraft = {
-  origin: string;
-  destination: string;
-  date: string;
-  dateKey: string;
-  time: string;
-  seats: number;
-  price: string;
-};
-
-const publishSteps = ["Ruta", "Fecha", "Hora", "Plazas", "Precio", "Resumen"];
+import { usePublishTripWizard } from "../features/trip-publishing/hooks/usePublishTripWizard";
+import {
+  publishPriceOptions,
+  publishSteps,
+} from "../features/trip-publishing/model/publish-trip-draft";
 
 const today = new Date(2026, 5, 25);
 const calendarMinMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-const publishPriceOptions = ["3,50", "4,00", "4,50", "5,00"];
-const initialPublishDraft: PublishDraft = {
-  origin: "Daimiel",
-  destination: "Ciudad Real",
-  date: "25 junio",
-  dateKey: "2026-06-25",
-  time: "07:30",
-  seats: 2,
-  price: "4,00",
-};
 
 const SwitchIcon = () => (
   <svg aria-hidden="true" viewBox="0 0 24 24" focusable="false">
@@ -84,34 +65,40 @@ function App() {
   const [activeView, setActiveView] = useState<AppView>("home");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
-  const [publishStep, setPublishStep] = useState(0);
-  const [isPublishComplete, setIsPublishComplete] = useState(false);
-  const [publishDraft, setPublishDraft] =
-    useState<PublishDraft>(initialPublishDraft);
-  const [calendarCursor, setCalendarCursor] = useState(calendarMinMonth);
   const [sortKey, setSortKey] = useState<TripSearchSort>("earliest");
   const [verifiedOnly, setVerifiedOnly] = useState(false);
   const [searchDate, setSearchDate] = useState(() => getDateKey(new Date()));
   const [minSeats, setMinSeats] = useState(1);
   const [isPassengerPickerOpen, setIsPassengerPickerOpen] = useState(false);
   const [isRouteReversed, setIsRouteReversed] = useState(false);
+
+  const {
+    publishStep,
+    isPublishComplete,
+    publishDraft,
+    currentPublishStep,
+    isPublishSummaryStep,
+    visibleCalendarMonths,
+    canGoToPreviousCalendarMonth,
+    publishProgress,
+    updatePublishDraft,
+    swapPublishRoute,
+    goToNextPublishStep,
+    goToPreviousPublishStep,
+    resetPublishWizard,
+    goToPreviousCalendarMonth,
+    goToNextCalendarMonth,
+  } = usePublishTripWizard({
+    calendarMinMonth,
+  });
+
   const heroFrameRef = useRef<HTMLDivElement>(null);
   const parallaxFrameRef = useRef<number | null>(null);
   const searchDateInputRef = useRef<HTMLInputElement>(null);
 
   const origin = isRouteReversed ? "Ciudad Real" : "Daimiel";
   const destination = isRouteReversed ? "Daimiel" : "Ciudad Real";
-  const currentPublishStep = publishSteps[publishStep];
-  const isPublishSummaryStep = publishStep === publishSteps.length - 1;
-  const visibleCalendarMonths = [
-    getCalendarMonth(calendarCursor),
-    getCalendarMonth(addMonths(calendarCursor, 1)),
-  ];
-  const canGoToPreviousCalendarMonth = !isBeforeMonth(
-    addMonths(calendarCursor, -1),
-    calendarMinMonth,
-  );
-  const publishProgress = `${(publishStep / (publishSteps.length - 1)) * 100}%`;
+
   const todayKey = getDateKey(new Date());
   const searchDateLabel =
     searchDate === todayKey
@@ -142,40 +129,6 @@ function App() {
   const showPublishView = () => navigateTo("publish");
 
   const showHomeView = () => navigateTo("home");
-
-  const updatePublishDraft = <Key extends keyof PublishDraft>(
-    key: Key,
-    value: PublishDraft[Key],
-  ) => {
-    setPublishDraft((currentDraft) => ({
-      ...currentDraft,
-      [key]: value,
-    }));
-    setIsPublishComplete(false);
-  };
-
-  const goToNextPublishStep = () => {
-    if (isPublishSummaryStep) {
-      setIsPublishComplete(true);
-      return;
-    }
-
-    setPublishStep((currentStep) =>
-      Math.min(currentStep + 1, publishSteps.length - 1),
-    );
-  };
-
-  const goToPreviousPublishStep = () => {
-    setIsPublishComplete(false);
-    setPublishStep((currentStep) => Math.max(currentStep - 1, 0));
-  };
-
-  const resetPublishWizard = () => {
-    setPublishDraft(initialPublishDraft);
-    setPublishStep(0);
-    setIsPublishComplete(false);
-    setCalendarCursor(calendarMinMonth);
-  };
 
   const updatePassengerCount = (amount: number) => {
     setMinSeats((currentCount) =>
@@ -723,13 +676,7 @@ function App() {
                           <button
                             className="publish-swap"
                             type="button"
-                            onClick={() =>
-                              setPublishDraft((currentDraft) => ({
-                                ...currentDraft,
-                                origin: currentDraft.destination,
-                                destination: currentDraft.origin,
-                              }))
-                            }
+                            onClick={swapPublishRoute}
                             aria-label="Invertir origen y destino"
                           >
                             <SwitchIcon />
@@ -754,11 +701,7 @@ function App() {
                           <div className="calendar-toolbar">
                             <button
                               type="button"
-                              onClick={() =>
-                                setCalendarCursor((currentDate) =>
-                                  addMonths(currentDate, -1),
-                                )
-                              }
+                              onClick={goToPreviousCalendarMonth}
                               disabled={!canGoToPreviousCalendarMonth}
                               aria-label="Mostrar mes anterior"
                             >
@@ -767,11 +710,7 @@ function App() {
                             <span>{publishDraft.date}</span>
                             <button
                               type="button"
-                              onClick={() =>
-                                setCalendarCursor((currentDate) =>
-                                  addMonths(currentDate, 1),
-                                )
-                              }
+                              onClick={goToNextCalendarMonth}
                               aria-label="Mostrar mes siguiente"
                             >
                               <ArrowIcon />
