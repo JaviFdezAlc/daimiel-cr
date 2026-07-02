@@ -1,113 +1,97 @@
-import { useState } from 'react'
+import { useState } from "react";
 
 import {
   addMonths,
   getCalendarMonth,
   isBeforeMonth,
-} from '../../../shared/lib/date'
+} from "../../../shared/lib/date";
 import {
   initialPublishTripDraft,
   publishSteps,
   type PublishTripDraft,
-} from '../model/publish-trip-draft'
+} from "../model/publish-trip-draft";
 
 type UsePublishTripWizardParams = {
-  calendarMinMonth: Date
-}
+  calendarMinMonth: Date;
+};
 
 export function usePublishTripWizard({
   calendarMinMonth,
 }: UsePublishTripWizardParams) {
-  const [publishStep, setPublishStep] = useState(0)
-  const [isPublishComplete, setIsPublishComplete] = useState(false)
-  const [publishDraft, setPublishDraft] = useState(
-    initialPublishTripDraft,
-  )
+  const [publishStep, setPublishStep] = useState(0);
+  const [isPublishComplete, setIsPublishComplete] = useState(false);
+  const [publishDraft, setPublishDraft] = useState(initialPublishTripDraft);
   const [calendarCursor, setCalendarCursor] = useState(
     () => new Date(calendarMinMonth),
-  )
+  );
 
-  const currentPublishStep =
-    publishSteps[publishStep] ?? publishSteps[0]
+  const currentPublishStep = publishSteps[publishStep] ?? publishSteps[0];
 
-  const isPublishSummaryStep =
-    publishStep === publishSteps.length - 1
+  const isPublishSummaryStep = publishStep === publishSteps.length - 1;
 
   const visibleCalendarMonths = [
     getCalendarMonth(calendarCursor),
     getCalendarMonth(addMonths(calendarCursor, 1)),
-  ]
+  ];
 
   const canGoToPreviousCalendarMonth = !isBeforeMonth(
     addMonths(calendarCursor, -1),
     calendarMinMonth,
-  )
+  );
 
-  const publishProgress = `${
-    (publishStep / (publishSteps.length - 1)) * 100
-  }%`
+  const publishProgress = `${(publishStep / (publishSteps.length - 1)) * 100}%`;
 
-  const updatePublishDraft = <
-    Key extends keyof PublishTripDraft,
-  >(
+  const updatePublishDraft = <Key extends keyof PublishTripDraft>(
     key: Key,
     value: PublishTripDraft[Key],
   ) => {
     setPublishDraft((currentDraft) => ({
       ...currentDraft,
       [key]: value,
-    }))
-    setIsPublishComplete(false)
-  }
+    }));
+    setIsPublishComplete(false);
+  };
 
-  const swapPublishRoute = () => {
+  const swapRoute = () => {
     setPublishDraft((currentDraft) => ({
       ...currentDraft,
       origin: currentDraft.destination,
       destination: currentDraft.origin,
-    }))
-    setIsPublishComplete(false)
-  }
+    }));
+
+    setIsPublishComplete(false);
+  };
 
   const goToNextPublishStep = () => {
     if (isPublishSummaryStep) {
-      setIsPublishComplete(true)
-      return
+      setIsPublishComplete(true);
+      return;
     }
 
     setPublishStep((currentStep) =>
-      Math.min(
-        currentStep + 1,
-        publishSteps.length - 1,
-      ),
-    )
-  }
+      Math.min(currentStep + 1, publishSteps.length - 1),
+    );
+  };
 
   const goToPreviousPublishStep = () => {
-    setIsPublishComplete(false)
-    setPublishStep((currentStep) =>
-      Math.max(currentStep - 1, 0),
-    )
-  }
+    setIsPublishComplete(false);
+    setPublishStep((currentStep) => Math.max(currentStep - 1, 0));
+  };
 
   const resetPublishWizard = () => {
-    setPublishDraft(initialPublishTripDraft)
-    setPublishStep(0)
-    setIsPublishComplete(false)
-    setCalendarCursor(new Date(calendarMinMonth))
-  }
+    setPublishDraft(initialPublishTripDraft);
+    setPublishStep(0);
+    setIsPublishComplete(false);
+    setCalendarCursor(new Date(calendarMinMonth));
+  };
 
   const goToPreviousCalendarMonth = () => {
-    setCalendarCursor((currentDate) =>
-      addMonths(currentDate, -1),
-    )
-  }
+    setCalendarCursor((currentDate) => addMonths(currentDate, -1));
+  };
 
   const goToNextCalendarMonth = () => {
-    setCalendarCursor((currentDate) =>
-      addMonths(currentDate, 1),
-    )
-  }
+    setCalendarCursor((currentDate) => addMonths(currentDate, 1));
+  };
 
   return {
     publishStep,
@@ -119,11 +103,11 @@ export function usePublishTripWizard({
     canGoToPreviousCalendarMonth,
     publishProgress,
     updatePublishDraft,
-    swapPublishRoute,
+    swapRoute,
     goToNextPublishStep,
     goToPreviousPublishStep,
     resetPublishWizard,
     goToPreviousCalendarMonth,
     goToNextCalendarMonth,
-  }
+  };
 }

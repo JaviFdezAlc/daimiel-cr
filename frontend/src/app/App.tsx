@@ -28,16 +28,10 @@ import {
   publishPriceOptions,
   publishSteps,
 } from "../features/trip-publishing/model/publish-trip-draft";
+import { PublishRouteStep } from "../features/trip-publishing/components/PublishRouteStep";
 
 const today = new Date(2026, 5, 25);
 const calendarMinMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-
-const SwitchIcon = () => (
-  <svg aria-hidden="true" viewBox="0 0 24 24" focusable="false">
-    <path d="M7 7h10m0 0-3-3m3 3-3 3" />
-    <path d="M17 17H7m0 0 3 3m-3-3 3-3" />
-  </svg>
-);
 
 const SearchIcon = () => (
   <svg aria-hidden="true" viewBox="0 0 24 24" focusable="false">
@@ -82,7 +76,7 @@ function App() {
     canGoToPreviousCalendarMonth,
     publishProgress,
     updatePublishDraft,
-    swapPublishRoute,
+    swapRoute,
     goToNextPublishStep,
     goToPreviousPublishStep,
     resetPublishWizard,
@@ -663,37 +657,17 @@ function App() {
 
                     <div className="publish-step-body">
                       {currentPublishStep === "Ruta" && (
-                        <div className="publish-route-step">
-                          <label>
-                            <span>Origen</span>
-                            <input
-                              value={publishDraft.origin}
-                              onChange={(event) =>
-                                updatePublishDraft("origin", event.target.value)
-                              }
-                            />
-                          </label>
-                          <button
-                            className="publish-swap"
-                            type="button"
-                            onClick={swapPublishRoute}
-                            aria-label="Invertir origen y destino"
-                          >
-                            <SwitchIcon />
-                          </button>
-                          <label>
-                            <span>Destino</span>
-                            <input
-                              value={publishDraft.destination}
-                              onChange={(event) =>
-                                updatePublishDraft(
-                                  "destination",
-                                  event.target.value,
-                                )
-                              }
-                            />
-                          </label>
-                        </div>
+                        <PublishRouteStep
+                          origin={publishDraft.origin}
+                          destination={publishDraft.destination}
+                          onOriginChange={(origin) =>
+                            updatePublishDraft("origin", origin)
+                          }
+                          onDestinationChange={(destination) =>
+                            updatePublishDraft("destination", destination)
+                          }
+                          onSwapRoute={swapRoute}
+                        />
                       )}
 
                       {currentPublishStep === "Fecha" && (
