@@ -29,6 +29,7 @@ import {
   publishSteps,
 } from "../features/trip-publishing/model/publish-trip-draft";
 import { PublishRouteStep } from "../features/trip-publishing/components/PublishRouteStep";
+import { PublishDateStep } from "../features/trip-publishing/components/PublishDateStep";
 
 const today = new Date(2026, 5, 25);
 const calendarMinMonth = new Date(today.getFullYear(), today.getMonth(), 1);
@@ -76,6 +77,7 @@ function App() {
     canGoToPreviousCalendarMonth,
     publishProgress,
     updatePublishDraft,
+    selectPublishDate,
     swapRoute,
     goToNextPublishStep,
     goToPreviousPublishStep,
@@ -94,6 +96,7 @@ function App() {
   const destination = isRouteReversed ? "Daimiel" : "Ciudad Real";
 
   const todayKey = getDateKey(new Date());
+  const publishMinimumDateKey = getDateKey(today);
   const searchDateLabel =
     searchDate === todayKey
       ? "Hoy"
@@ -671,83 +674,16 @@ function App() {
                       )}
 
                       {currentPublishStep === "Fecha" && (
-                        <div className="publish-calendar-step">
-                          <div className="calendar-toolbar">
-                            <button
-                              type="button"
-                              onClick={goToPreviousCalendarMonth}
-                              disabled={!canGoToPreviousCalendarMonth}
-                              aria-label="Mostrar mes anterior"
-                            >
-                              <ArrowIcon />
-                            </button>
-                            <span>{publishDraft.date}</span>
-                            <button
-                              type="button"
-                              onClick={goToNextCalendarMonth}
-                              aria-label="Mostrar mes siguiente"
-                            >
-                              <ArrowIcon />
-                            </button>
-                          </div>
-
-                          <div className="calendar-months">
-                            {visibleCalendarMonths.map((month, monthIndex) => (
-                              <div
-                                className={`calendar-month month-${monthIndex + 1}`}
-                                key={month.key}
-                              >
-                                <h3>{month.label}</h3>
-                                <div className="calendar-grid is-weekdays">
-                                  {weekDays.map((weekDay) => (
-                                    <span key={weekDay}>{weekDay}</span>
-                                  ))}
-                                </div>
-                                <div className="calendar-grid">
-                                  {Array.from(
-                                    { length: month.startOffset },
-                                    (_, index) => (
-                                      <span
-                                        className="calendar-empty"
-                                        key={`${month.key}-empty-${index}`}
-                                      />
-                                    ),
-                                  )}
-                                  {month.days.map((dayDate) => {
-                                    const dateKey = getDateKey(dayDate);
-                                    const dateLabel = getReadableDate(dayDate);
-                                    const isPast = dateKey < getDateKey(today);
-
-                                    return (
-                                      <button
-                                        className={
-                                          publishDraft.dateKey === dateKey
-                                            ? "is-selected"
-                                            : undefined
-                                        }
-                                        type="button"
-                                        onClick={() => {
-                                          updatePublishDraft("date", dateLabel);
-                                          updatePublishDraft(
-                                            "dateKey",
-                                            dateKey,
-                                          );
-                                        }}
-                                        aria-pressed={
-                                          publishDraft.dateKey === dateKey
-                                        }
-                                        disabled={isPast}
-                                        key={dateKey}
-                                      >
-                                        {dayDate.getDate()}
-                                      </button>
-                                    );
-                                  })}
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
+                        <PublishDateStep
+                          selectedDateKey={publishDraft.dateKey}
+                          selectedDateLabel={publishDraft.date}
+                          visibleMonths={visibleCalendarMonths}
+                          canGoToPreviousMonth={canGoToPreviousCalendarMonth}
+                          minimumDateKey={publishMinimumDateKey}
+                          onPreviousMonth={goToPreviousCalendarMonth}
+                          onNextMonth={goToNextCalendarMonth}
+                          onSelectDate={selectPublishDate}
+                        />
                       )}
 
                       {currentPublishStep === "Hora" && (

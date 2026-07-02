@@ -52,6 +52,16 @@ export function usePublishTripWizard({
     setIsPublishComplete(false);
   };
 
+  const selectPublishDate = (dateKey: string, dateLabel: string) => {
+    setPublishDraft((currentDraft) => ({
+      ...currentDraft,
+      date: dateLabel,
+      dateKey,
+    }));
+
+    setIsPublishComplete(false);
+  };
+
   const swapRoute = () => {
     setPublishDraft((currentDraft) => ({
       ...currentDraft,
@@ -103,6 +113,7 @@ export function usePublishTripWizard({
     canGoToPreviousCalendarMonth,
     publishProgress,
     updatePublishDraft,
+    selectPublishDate,
     swapRoute,
     goToNextPublishStep,
     goToPreviousPublishStep,
