@@ -11,7 +11,7 @@ import { TripSearchView } from '../features/trip-search/components/TripSearchVie
 import { SiteHeader } from './layout/SiteHeader'
 import type { AppView } from './navigation/app-view'
 
-const publishToday = new Date(2026, 5, 25);
+const publishToday = new Date();
 
 function App() {
   const [activeView, setActiveView] = useState<AppView>("home");

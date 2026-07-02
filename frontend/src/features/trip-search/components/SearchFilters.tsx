@@ -15,7 +15,7 @@ type SearchFiltersProps = {
   onMinSeatsChange: (minSeats: number) => void
 }
 
-const seatOptions = [1, 2, 3]
+const seatOptions = [1, 2, 3, 4]
 
 export function SearchFilters({
   isOpen,

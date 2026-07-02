@@ -1,3 +1,8 @@
+import {
+  getDateKey,
+  getReadableDate,
+} from '../../../shared/lib/date'
+
 export const publishSteps = [
   'Ruta',
   'Fecha',
@@ -26,12 +31,16 @@ export const publishPriceOptions = [
   '5,00',
 ]
 
-export const initialPublishTripDraft: PublishTripDraft = {
-  origin: 'Daimiel',
-  destination: 'Ciudad Real',
-  date: '25 junio',
-  dateKey: '2026-06-25',
-  time: '07:30',
-  seats: 2,
-  price: '4,00',
+export function createInitialPublishTripDraft(
+  today: Date,
+): PublishTripDraft {
+  return {
+    origin: 'Daimiel',
+    destination: 'Ciudad Real',
+    date: getReadableDate(today),
+    dateKey: getDateKey(today),
+    time: '07:30',
+    seats: 2,
+    price: '4,00',
+  }
 }

@@ -6,21 +6,22 @@ import {
   isBeforeMonth,
 } from "../../../shared/lib/date";
 import {
-  initialPublishTripDraft,
+  createInitialPublishTripDraft,
   publishSteps,
   type PublishTripDraft,
 } from "../model/publish-trip-draft";
 
 type UsePublishTripWizardParams = {
-  calendarMinMonth: Date;
+  today: Date;
 };
 
-export function usePublishTripWizard({
-  calendarMinMonth,
-}: UsePublishTripWizardParams) {
+export function usePublishTripWizard({ today }: UsePublishTripWizardParams) {
+  const calendarMinMonth = new Date(today.getFullYear(), today.getMonth(), 1);
   const [publishStep, setPublishStep] = useState(0);
   const [isPublishComplete, setIsPublishComplete] = useState(false);
-  const [publishDraft, setPublishDraft] = useState(initialPublishTripDraft);
+  const [publishDraft, setPublishDraft] = useState(() =>
+    createInitialPublishTripDraft(today),
+  );
   const [calendarCursor, setCalendarCursor] = useState(
     () => new Date(calendarMinMonth),
   );
@@ -89,7 +90,7 @@ export function usePublishTripWizard({
   };
 
   const resetPublishWizard = () => {
-    setPublishDraft(initialPublishTripDraft);
+    setPublishDraft(createInitialPublishTripDraft(today));
     setPublishStep(0);
     setIsPublishComplete(false);
     setCalendarCursor(new Date(calendarMinMonth));

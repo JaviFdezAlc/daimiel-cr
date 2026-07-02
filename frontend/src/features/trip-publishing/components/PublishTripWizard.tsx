@@ -22,12 +22,6 @@ export function PublishTripWizard({
   today,
   onReturnHome,
 }: PublishTripWizardProps) {
-  const calendarMinMonth = new Date(
-    today.getFullYear(),
-    today.getMonth(),
-    1,
-  )
-
   const publishMinimumDateKey = getDateKey(today)
 
   const {
@@ -47,9 +41,7 @@ export function PublishTripWizard({
     resetPublishWizard,
     goToPreviousCalendarMonth,
     goToNextCalendarMonth,
-  } = usePublishTripWizard({
-    calendarMinMonth,
-  })
+  } = usePublishTripWizard({ today })
 
   return (
     <section
