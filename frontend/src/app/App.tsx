@@ -30,6 +30,7 @@ import {
 } from "../features/trip-publishing/model/publish-trip-draft";
 import { PublishRouteStep } from "../features/trip-publishing/components/PublishRouteStep";
 import { PublishDateStep } from "../features/trip-publishing/components/PublishDateStep";
+import { PublishTimeStep } from "../features/trip-publishing/components/PublishTimeStep";
 
 const today = new Date(2026, 5, 25);
 const calendarMinMonth = new Date(today.getFullYear(), today.getMonth(), 1);
@@ -687,19 +688,12 @@ function App() {
                       )}
 
                       {currentPublishStep === "Hora" && (
-                        <div className="publish-time-step">
-                          <label>
-                            <span>Hora de salida</span>
-                            <input
-                              type="time"
-                              value={publishDraft.time}
-                              step="900"
-                              onChange={(event) =>
-                                updatePublishDraft("time", event.target.value)
-                              }
-                            />
-                          </label>
-                        </div>
+                        <PublishTimeStep
+                          time={publishDraft.time}
+                          onTimeChange={(time) =>
+                            updatePublishDraft("time", time)
+                          }
+                        />
                       )}
 
                       {currentPublishStep === "Plazas" && (
