@@ -31,6 +31,7 @@ import {
 import { PublishRouteStep } from "../features/trip-publishing/components/PublishRouteStep";
 import { PublishDateStep } from "../features/trip-publishing/components/PublishDateStep";
 import { PublishTimeStep } from "../features/trip-publishing/components/PublishTimeStep";
+import { PublishSeatsStep } from "../features/trip-publishing/components/PublishSeatsStep";
 
 const today = new Date(2026, 5, 25);
 const calendarMinMonth = new Date(today.getFullYear(), today.getMonth(), 1);
@@ -697,25 +698,12 @@ function App() {
                       )}
 
                       {currentPublishStep === "Plazas" && (
-                        <div className="publish-seat-grid">
-                          {[1, 2, 3, 4].map((seatCount) => (
-                            <button
-                              className={
-                                publishDraft.seats === seatCount
-                                  ? "is-selected"
-                                  : undefined
-                              }
-                              type="button"
-                              onClick={() =>
-                                updatePublishDraft("seats", seatCount)
-                              }
-                              aria-pressed={publishDraft.seats === seatCount}
-                              key={seatCount}
-                            >
-                              {seatCount}
-                            </button>
-                          ))}
-                        </div>
+                        <PublishSeatsStep
+                          seats={publishDraft.seats}
+                          onSeatsChange={(seats) =>
+                            updatePublishDraft("seats", seats)
+                          }
+                        />
                       )}
 
                       {currentPublishStep === "Precio" && (
