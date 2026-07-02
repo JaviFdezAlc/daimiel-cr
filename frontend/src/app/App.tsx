@@ -14,6 +14,17 @@ import { SponsorsStrip } from "../features/home/components/SponsorsStrip";
 import { mockTrips } from "../features/trip-search/mocks/trips";
 import type { TripSearchSort } from "../features/trip-search/model/trip-search";
 import { filterTrips } from "../features/trip-search/lib/filterTrips";
+import {
+  addMonths,
+  getCalendarMonth,
+  getDateFromKey,
+  getDateKey,
+  getDayOffset,
+  getMonthLabel,
+  getReadableDate,
+  isBeforeMonth,
+  weekDays,
+} from '../shared/lib/date'
 
 type PublishDraft = {
   origin: string;
@@ -26,21 +37,7 @@ type PublishDraft = {
 };
 
 const publishSteps = ["Ruta", "Fecha", "Hora", "Plazas", "Precio", "Resumen"];
-const weekDays = ["Dom", "Lun", "Mar", "Mie", "Jue", "Vie", "Sab"];
-const monthNames = [
-  "enero",
-  "febrero",
-  "marzo",
-  "abril",
-  "mayo",
-  "junio",
-  "julio",
-  "agosto",
-  "septiembre",
-  "octubre",
-  "noviembre",
-  "diciembre",
-];
+
 const today = new Date(2026, 5, 25);
 const calendarMinMonth = new Date(today.getFullYear(), today.getMonth(), 1);
 const publishPriceOptions = ["3,50", "4,00", "4,50", "5,00"];
@@ -52,60 +49,6 @@ const initialPublishDraft: PublishDraft = {
   time: "07:30",
   seats: 2,
   price: "4,00",
-};
-
-const getDateKey = (date: Date) =>
-  `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
-
-const getReadableDate = (date: Date) =>
-  `${date.getDate()} ${monthNames[date.getMonth()]}`;
-
-const getMonthLabel = (date: Date) => {
-  const month = monthNames[date.getMonth()];
-
-  return `${month.charAt(0).toUpperCase()}${month.slice(1)}`;
-};
-
-const getCalendarMonth = (date: Date) => {
-  const year = date.getFullYear();
-  const month = date.getMonth();
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-
-  return {
-    key: `${year}-${month}`,
-    label: getMonthLabel(date),
-    year,
-    month,
-    startOffset: new Date(year, month, 1).getDay(),
-    days: Array.from(
-      { length: daysInMonth },
-      (_, index) => new Date(year, month, index + 1),
-    ),
-  };
-};
-
-const addMonths = (date: Date, amount: number) =>
-  new Date(date.getFullYear(), date.getMonth() + amount, 1);
-
-const isBeforeMonth = (date: Date, compareDate: Date) =>
-  date.getFullYear() < compareDate.getFullYear() ||
-  (date.getFullYear() === compareDate.getFullYear() &&
-    date.getMonth() < compareDate.getMonth());
-
-const getDateFromKey = (dateKey: string) => {
-  const [year, month, day] = dateKey.split("-").map(Number);
-
-  return new Date(year, month - 1, day);
-};
-
-const getDayOffset = (dateKey: string, baseDateKey: string) => {
-  const millisecondsPerDay = 24 * 60 * 60 * 1000;
-
-  return Math.round(
-    (getDateFromKey(dateKey).getTime() -
-      getDateFromKey(baseDateKey).getTime()) /
-      millisecondsPerDay,
-  );
 };
 
 const SwitchIcon = () => (
