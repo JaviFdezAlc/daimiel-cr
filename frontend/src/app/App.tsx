@@ -24,14 +24,14 @@ import {
 } from "../shared/lib/date";
 
 import { usePublishTripWizard } from "../features/trip-publishing/hooks/usePublishTripWizard";
-import {
-  publishPriceOptions,
-  publishSteps,
-} from "../features/trip-publishing/model/publish-trip-draft";
+
+import { publishSteps } from "../features/trip-publishing/model/publish-trip-draft";
 import { PublishRouteStep } from "../features/trip-publishing/components/PublishRouteStep";
 import { PublishDateStep } from "../features/trip-publishing/components/PublishDateStep";
 import { PublishTimeStep } from "../features/trip-publishing/components/PublishTimeStep";
 import { PublishSeatsStep } from "../features/trip-publishing/components/PublishSeatsStep";
+import { PublishPriceStep } from "../features/trip-publishing/components/PublishPriceStep";
+import { PublishSummaryStep } from "../features/trip-publishing/components/PublishSummaryStep";
 
 const today = new Date(2026, 5, 25);
 const calendarMinMonth = new Date(today.getFullYear(), today.getMonth(), 1);
@@ -707,89 +707,16 @@ function App() {
                       )}
 
                       {currentPublishStep === "Precio" && (
-                        <div className="publish-price-step">
-                          <div className="publish-choice-grid">
-                            {publishPriceOptions.map((priceOption) => (
-                              <button
-                                className={
-                                  publishDraft.price === priceOption
-                                    ? "is-selected"
-                                    : undefined
-                                }
-                                type="button"
-                                onClick={() =>
-                                  updatePublishDraft("price", priceOption)
-                                }
-                                aria-pressed={
-                                  publishDraft.price === priceOption
-                                }
-                                key={priceOption}
-                              >
-                                {priceOption} EUR
-                              </button>
-                            ))}
-                          </div>
-                          <label>
-                            <span>Otro precio</span>
-                            <input
-                              inputMode="decimal"
-                              value={publishDraft.price}
-                              onChange={(event) =>
-                                updatePublishDraft("price", event.target.value)
-                              }
-                            />
-                          </label>
-                        </div>
+                        <PublishPriceStep
+                          price={publishDraft.price}
+                          onPriceChange={(price) =>
+                            updatePublishDraft("price", price)
+                          }
+                        />
                       )}
 
                       {currentPublishStep === "Resumen" && (
-                        <div className="publish-review-card">
-                          <div className="review-route">
-                            <span className="review-eyebrow">Trayecto</span>
-                            <div className="review-route-line">
-                              <div className="review-place">
-                                <small>Salida</small>
-                                <strong>{publishDraft.origin}</strong>
-                              </div>
-                              <span
-                                className="review-route-track"
-                                aria-hidden="true"
-                              >
-                                <i />
-                                <ArrowIcon />
-                              </span>
-                              <div className="review-place">
-                                <small>Llegada</small>
-                                <strong>{publishDraft.destination}</strong>
-                              </div>
-                            </div>
-                          </div>
-
-                          <div
-                            className="review-details"
-                            aria-label="Detalles del viaje"
-                          >
-                            <div>
-                              <span>Dia</span>
-                              <strong>{publishDraft.date}</strong>
-                            </div>
-                            <div>
-                              <span>Hora</span>
-                              <strong>{publishDraft.time}</strong>
-                            </div>
-                            <div>
-                              <span>Plazas</span>
-                              <strong>
-                                {publishDraft.seats} plaza
-                                {publishDraft.seats > 1 ? "s" : ""}
-                              </strong>
-                            </div>
-                            <div>
-                              <span>Precio</span>
-                              <strong>{publishDraft.price} EUR</strong>
-                            </div>
-                          </div>
-                        </div>
+                        <PublishSummaryStep draft={publishDraft} />
                       )}
                     </div>
                   </div>
