@@ -1,148 +1,108 @@
-import {
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react'
+import { useEffect, useRef, useState } from "react";
 
 import {
   getDateFromKey,
   getDateKey,
-  getDayOffset,
   getMonthLabel,
   getReadableDate,
-} from '../../../shared/lib/date'
-import { filterTrips } from '../lib/filterTrips'
-import { mapMockTripToSearchTripResult } from '../mocks/map-mock-trip-to-search-trip-result'
-import { mockTrips } from '../mocks/trips'
-import type { TripSearchSort } from '../model/trip-search'
-import { SearchControls } from './SearchControls'
-import { SearchFilters } from './SearchFilters'
-import { SearchResults } from './SearchResults'
+} from "../../../shared/lib/date";
+import type { TripSearchSort } from "../model/trip-search";
+import { SearchControls } from "./SearchControls";
+import { SearchFilters } from "./SearchFilters";
+import { SearchResults } from "./SearchResults";
+
+import { useSearchTrips } from "../hooks/useSearchTrips";
+import type { TripLocationResponse } from "../api/search-trips-response";
 
 type TripSearchViewProps = {
-  isVisible: boolean
-}
+  isVisible: boolean;
+};
 
-export function TripSearchView({
-  isVisible,
-}: TripSearchViewProps) {
-  const [isMobileFiltersOpen, setIsMobileFiltersOpen] =
-    useState(false)
-  const [sortKey, setSortKey] =
-    useState<TripSearchSort>('earliest')
-  const [verifiedOnly, setVerifiedOnly] = useState(false)
-  const [searchDate, setSearchDate] = useState(() =>
-    getDateKey(new Date()),
-  )
-  const [minSeats, setMinSeats] = useState(1)
-  const [isPassengerPickerOpen, setIsPassengerPickerOpen] =
-    useState(false)
-  const [isRouteReversed, setIsRouteReversed] =
-    useState(false)
+export function TripSearchView({ isVisible }: TripSearchViewProps) {
+  const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
+  const [sortKey, setSortKey] = useState<TripSearchSort>("earliest");
+  const [searchDate, setSearchDate] = useState(() => getDateKey(new Date()));
+  const [minSeats, setMinSeats] = useState(1);
+  const [isPassengerPickerOpen, setIsPassengerPickerOpen] = useState(false);
+  const [isRouteReversed, setIsRouteReversed] = useState(false);
 
-  const searchDateInputRef = useRef<HTMLInputElement>(null)
+  const searchDateInputRef = useRef<HTMLInputElement>(null);
 
-  const todayKey = getDateKey(new Date())
+  const todayKey = getDateKey(new Date());
 
-  const origin = isRouteReversed
-    ? 'Ciudad Real'
-    : 'Daimiel'
+  const origin = isRouteReversed ? "Ciudad Real" : "Daimiel";
 
-  const destination = isRouteReversed
-    ? 'Daimiel'
-    : 'Ciudad Real'
+  const destination = isRouteReversed ? "Daimiel" : "Ciudad Real";
+
+  const apiOrigin: TripLocationResponse = isRouteReversed
+    ? "CIUDAD_REAL"
+    : "DAIMIEL";
+
+  const apiDestination: TripLocationResponse = isRouteReversed
+    ? "DAIMIEL"
+    : "CIUDAD_REAL";
 
   const searchDateLabel =
     searchDate === todayKey
-      ? 'Hoy'
-      : getReadableDate(getDateFromKey(searchDate))
+      ? "Hoy"
+      : getReadableDate(getDateFromKey(searchDate));
 
-  const searchDateShortLabel = `${
-    getDateFromKey(searchDate).getDate()
-  } ${getMonthLabel(
-    getDateFromKey(searchDate),
-  ).slice(0, 3)}`
-
-  const visibleTrips = useMemo(() => {
-    const searchDayOffset = getDayOffset(
-      searchDate,
-      todayKey,
-    )
-
-    return filterTrips({
-      trips: mockTrips,
-      dayOffset: searchDayOffset,
-      minSeats,
-      verifiedOnly,
-      sort: sortKey,
-    })
-  }, [
-    minSeats,
+  const searchDateShortLabel = `${getDateFromKey(
     searchDate,
-    sortKey,
-    todayKey,
-    verifiedOnly,
-  ])
+  ).getDate()} ${getMonthLabel(getDateFromKey(searchDate)).slice(0, 3)}`;
 
-  const displayTrips = useMemo(
-    () =>
-      visibleTrips.map((trip) =>
-        mapMockTripToSearchTripResult(
-          trip,
-          isRouteReversed,
-        ),
-      ),
-    [isRouteReversed, visibleTrips],
-  )
+  const { trips, totalTrips, isLoading, errorMessage, retry } = useSearchTrips({
+    isEnabled: isVisible,
+    origin: apiOrigin,
+    destination: apiDestination,
+    date: searchDate,
+    requiredSeats: minSeats,
+    sort: sortKey,
+  });
 
   useEffect(() => {
     if (isVisible) {
-      return
+      return;
     }
 
     const frameId = window.requestAnimationFrame(() => {
-      setIsMobileFiltersOpen(false)
-    })
+      setIsMobileFiltersOpen(false);
+    });
 
-    return () => window.cancelAnimationFrame(frameId)
-  }, [isVisible])
+    return () => window.cancelAnimationFrame(frameId);
+  }, [isVisible]);
 
   const updatePassengerCount = (amount: number) => {
     setMinSeats((currentCount) =>
       Math.min(4, Math.max(1, currentCount + amount)),
-    )
-  }
+    );
+  };
 
   const updateSearchDate = (date: string) => {
-    setSearchDate(date || todayKey)
-  }
+    setSearchDate(date || todayKey);
+  };
 
   const toggleSearchRoute = () => {
-    setIsRouteReversed((currentValue) => !currentValue)
-  }
+    setIsRouteReversed((currentValue) => !currentValue);
+  };
 
   const toggleMobileFilters = () => {
-    setIsMobileFiltersOpen(
-      (currentValue) => !currentValue,
-    )
-  }
+    setIsMobileFiltersOpen((currentValue) => !currentValue);
+  };
 
   const togglePassengerPicker = () => {
-    setIsPassengerPickerOpen(
-      (currentValue) => !currentValue,
-    )
-  }
+    setIsPassengerPickerOpen((currentValue) => !currentValue);
+  };
 
   const closePassengerPicker = () => {
-    setIsPassengerPickerOpen(false)
-  }
+    setIsPassengerPickerOpen(false);
+  };
 
   const openSearchDatePicker = () => {
-    setIsPassengerPickerOpen(false)
-    searchDateInputRef.current?.focus()
-    searchDateInputRef.current?.showPicker?.()
-  }
+    setIsPassengerPickerOpen(false);
+    searchDateInputRef.current?.focus();
+    searchDateInputRef.current?.showPicker?.();
+  };
 
   return (
     <section
@@ -176,23 +136,25 @@ export function TripSearchView({
             isOpen={isMobileFiltersOpen}
             origin={origin}
             destination={destination}
-            availableTrips={visibleTrips.length}
+            availableTrips={totalTrips}
             searchDateLabel={searchDateLabel}
             minSeats={minSeats}
             sort={sortKey}
-            verifiedOnly={verifiedOnly}
             onSortChange={setSortKey}
-            onVerifiedOnlyChange={setVerifiedOnly}
             onMinSeatsChange={setMinSeats}
           />
 
           <SearchResults
-            trips={displayTrips}
+            trips={trips}
+            totalTrips={totalTrips}
             searchDateLabel={searchDateLabel}
             minSeats={minSeats}
+            isLoading={isLoading}
+            errorMessage={errorMessage}
+            onRetry={retry}
           />
         </div>
       </div>
     </section>
-  )
+  );
 }

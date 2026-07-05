@@ -9,9 +9,7 @@ type SearchFiltersProps = {
   searchDateLabel: string;
   minSeats: number;
   sort: TripSearchSort;
-  verifiedOnly: boolean;
   onSortChange: (sort: TripSearchSort) => void;
-  onVerifiedOnlyChange: (verifiedOnly: boolean) => void;
   onMinSeatsChange: (minSeats: number) => void;
 };
 
@@ -25,9 +23,7 @@ export function SearchFilters({
   searchDateLabel,
   minSeats,
   sort,
-  verifiedOnly,
   onSortChange,
-  onVerifiedOnlyChange,
   onMinSeatsChange,
 }: SearchFiltersProps) {
   return (
@@ -85,21 +81,6 @@ export function SearchFilters({
           <span />
           Mas plazas disponibles
         </button>
-      </div>
-
-      <div className="filter-group">
-        <div className="filter-heading">
-          <h2>Confianza</h2>
-        </div>
-
-        <label className="toggle-option">
-          <input
-            type="checkbox"
-            checked={verifiedOnly}
-            onChange={(event) => onVerifiedOnlyChange(event.target.checked)}
-          />
-          <span>Solo conductores verificados</span>
-        </label>
       </div>
 
       <div className="filter-group">
