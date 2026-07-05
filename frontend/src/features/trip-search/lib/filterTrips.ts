@@ -1,15 +1,12 @@
-import type {
-  TripSearchItem,
-  TripSearchSort,
-} from '../model/trip-search'
+import type { TripSearchItem, TripSearchSort } from "../model/trip-search";
 
 type FilterTripsParams = {
-  trips: readonly TripSearchItem[]
-  dayOffset: number
-  minSeats: number
-  verifiedOnly: boolean
-  sort: TripSearchSort
-}
+  trips: readonly TripSearchItem[];
+  dayOffset: number;
+  minSeats: number;
+  verifiedOnly: boolean;
+  sort: TripSearchSort;
+};
 
 export function filterTrips({
   trips,
@@ -23,16 +20,14 @@ export function filterTrips({
     .filter((trip) => !verifiedOnly || trip.verified)
     .filter((trip) => trip.seats >= minSeats)
     .toSorted((firstTrip, secondTrip) => {
-      if (sort === 'price') {
-        return firstTrip.price - secondTrip.price
+      if (sort === "price") {
+        return firstTrip.price - secondTrip.price;
       }
 
-      if (sort === 'duration') {
-        return firstTrip.durationMinutes - secondTrip.durationMinutes
+      if (sort === "seats") {
+        return secondTrip.seats - firstTrip.seats;
       }
 
-      return firstTrip.departureTime.localeCompare(
-        secondTrip.departureTime,
-      )
-    })
+      return firstTrip.departureTime.localeCompare(secondTrip.departureTime);
+    });
 }

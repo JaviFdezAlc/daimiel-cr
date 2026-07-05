@@ -1,21 +1,21 @@
-import { ArrowIcon } from '../../../shared/icons/ArrowIcon'
-import type { TripSearchSort } from '../model/trip-search'
+import { ArrowIcon } from "../../../shared/icons/ArrowIcon";
+import type { TripSearchSort } from "../model/trip-search";
 
 type SearchFiltersProps = {
-  isOpen: boolean
-  origin: string
-  destination: string
-  availableTrips: number
-  searchDateLabel: string
-  minSeats: number
-  sort: TripSearchSort
-  verifiedOnly: boolean
-  onSortChange: (sort: TripSearchSort) => void
-  onVerifiedOnlyChange: (verifiedOnly: boolean) => void
-  onMinSeatsChange: (minSeats: number) => void
-}
+  isOpen: boolean;
+  origin: string;
+  destination: string;
+  availableTrips: number;
+  searchDateLabel: string;
+  minSeats: number;
+  sort: TripSearchSort;
+  verifiedOnly: boolean;
+  onSortChange: (sort: TripSearchSort) => void;
+  onVerifiedOnlyChange: (verifiedOnly: boolean) => void;
+  onMinSeatsChange: (minSeats: number) => void;
+};
 
-const seatOptions = [1, 2, 3, 4]
+const seatOptions = [1, 2, 3, 4];
 
 export function SearchFilters({
   isOpen,
@@ -32,7 +32,7 @@ export function SearchFilters({
 }: SearchFiltersProps) {
   return (
     <aside
-      className={`filters-panel ${isOpen ? 'is-open' : ''}`}
+      className={`filters-panel ${isOpen ? "is-open" : ""}`}
       id="mobile-filters-panel"
       aria-label="Filtros de busqueda"
     >
@@ -44,8 +44,8 @@ export function SearchFilters({
         </strong>
 
         <small>
-          {availableTrips} viajes disponibles · {searchDateLabel},{' '}
-          {minSeats} plaza{minSeats > 1 ? 's' : ''}
+          {availableTrips} viajes disponibles · {searchDateLabel}, {minSeats}{" "}
+          plaza{minSeats > 1 ? "s" : ""}
         </small>
       </div>
 
@@ -56,38 +56,34 @@ export function SearchFilters({
 
         <button
           className={`filter-option ${
-            sort === 'earliest' ? 'is-selected' : ''
+            sort === "earliest" ? "is-selected" : ""
           }`}
           type="button"
-          onClick={() => onSortChange('earliest')}
-          aria-pressed={sort === 'earliest'}
+          onClick={() => onSortChange("earliest")}
+          aria-pressed={sort === "earliest"}
         >
           <span />
           Salida mas temprana
         </button>
 
         <button
-          className={`filter-option ${
-            sort === 'price' ? 'is-selected' : ''
-          }`}
+          className={`filter-option ${sort === "price" ? "is-selected" : ""}`}
           type="button"
-          onClick={() => onSortChange('price')}
-          aria-pressed={sort === 'price'}
+          onClick={() => onSortChange("price")}
+          aria-pressed={sort === "price"}
         >
           <span />
           Precio mas bajo
         </button>
 
         <button
-          className={`filter-option ${
-            sort === 'duration' ? 'is-selected' : ''
-          }`}
+          className={`filter-option ${sort === "seats" ? "is-selected" : ""}`}
           type="button"
-          onClick={() => onSortChange('duration')}
-          aria-pressed={sort === 'duration'}
+          onClick={() => onSortChange("seats")}
+          aria-pressed={sort === "seats"}
         >
           <span />
-          Viaje mas corto
+          Mas plazas disponibles
         </button>
       </div>
 
@@ -100,9 +96,7 @@ export function SearchFilters({
           <input
             type="checkbox"
             checked={verifiedOnly}
-            onChange={(event) =>
-              onVerifiedOnlyChange(event.target.checked)
-            }
+            onChange={(event) => onVerifiedOnlyChange(event.target.checked)}
           />
           <span>Solo conductores verificados</span>
         </label>
@@ -113,17 +107,10 @@ export function SearchFilters({
           <h2>Plazas</h2>
         </div>
 
-        <div
-          className="seat-controls"
-          aria-label="Plazas minimas"
-        >
+        <div className="seat-controls" aria-label="Plazas minimas">
           {seatOptions.map((seatCount) => (
             <button
-              className={
-                minSeats === seatCount
-                  ? 'is-selected'
-                  : undefined
-              }
+              className={minSeats === seatCount ? "is-selected" : undefined}
               type="button"
               onClick={() => onMinSeatsChange(seatCount)}
               aria-pressed={minSeats === seatCount}
@@ -135,5 +122,5 @@ export function SearchFilters({
         </div>
       </div>
     </aside>
-  )
+  );
 }

@@ -1,4 +1,4 @@
-export type TripSearchSort = 'earliest' | 'price' | 'duration'
+export type TripSearchSort = 'earliest' | 'price' | 'seats'
 
 export type TripSearchItem = {
   id: number
