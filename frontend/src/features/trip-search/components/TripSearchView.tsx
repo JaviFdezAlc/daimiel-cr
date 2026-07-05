@@ -13,6 +13,7 @@ import {
   getReadableDate,
 } from '../../../shared/lib/date'
 import { filterTrips } from '../lib/filterTrips'
+import { mapMockTripToSearchTripResult } from '../mocks/map-mock-trip-to-search-trip-result'
 import { mockTrips } from '../mocks/trips'
 import type { TripSearchSort } from '../model/trip-search'
 import { SearchControls } from './SearchControls'
@@ -83,6 +84,17 @@ export function TripSearchView({
     todayKey,
     verifiedOnly,
   ])
+
+  const displayTrips = useMemo(
+    () =>
+      visibleTrips.map((trip) =>
+        mapMockTripToSearchTripResult(
+          trip,
+          isRouteReversed,
+        ),
+      ),
+    [isRouteReversed, visibleTrips],
+  )
 
   useEffect(() => {
     if (isVisible) {
@@ -175,10 +187,9 @@ export function TripSearchView({
           />
 
           <SearchResults
-            trips={visibleTrips}
+            trips={displayTrips}
             searchDateLabel={searchDateLabel}
             minSeats={minSeats}
-            isRouteReversed={isRouteReversed}
           />
         </div>
       </div>

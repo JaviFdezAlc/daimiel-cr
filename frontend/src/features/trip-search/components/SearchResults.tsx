@@ -1,11 +1,10 @@
 import { TripCard } from './TripCard'
-import type { TripSearchItem } from '../model/trip-search'
+import type { SearchTripResult } from '../model/search-trip-result'
 
 type SearchResultsProps = {
-  trips: readonly TripSearchItem[]
+  trips: readonly SearchTripResult[]
   searchDateLabel: string
   minSeats: number
-  isRouteReversed: boolean
 }
 
 function CarIcon() {
@@ -23,7 +22,6 @@ export function SearchResults({
   trips,
   searchDateLabel,
   minSeats,
-  isRouteReversed,
 }: SearchResultsProps) {
   return (
     <div className="results-column">
@@ -51,11 +49,7 @@ export function SearchResults({
       <div className="trip-list">
         {trips.length > 0 ? (
           trips.map((trip) => (
-            <TripCard
-              key={trip.id}
-              trip={trip}
-              isRouteReversed={isRouteReversed}
-            />
+            <TripCard key={trip.id} trip={trip} />
           ))
         ) : (
           <div className="empty-results">

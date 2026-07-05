@@ -1,30 +1,16 @@
-import type { TripSearchItem } from '../model/trip-search'
+import type { SearchTripResult } from '../model/search-trip-result'
 
 type TripCardProps = {
-  trip: TripSearchItem
-  isRouteReversed: boolean
+  trip: SearchTripResult
 }
 
-function StarIcon() {
-  return (
-    <svg aria-hidden="true" viewBox="0 0 24 24" focusable="false">
-      <path d="m12 3 2.78 5.63 6.22.9-4.5 4.38 1.06 6.19L12 17.18 6.44 20.1 7.5 13.91 3 9.53l6.22-.9L12 3Z" />
-    </svg>
-  )
-}
-
-export function TripCard({
-  trip,
-  isRouteReversed,
-}: TripCardProps) {
+export function TripCard({ trip }: TripCardProps) {
   return (
     <article className="trip-card">
       <div className="trip-main">
         <div className="trip-point">
           <strong>{trip.departureTime}</strong>
-          <span>
-            {isRouteReversed ? trip.to : trip.from}
-          </span>
+          <span>{trip.origin}</span>
         </div>
 
         <div className="trip-duration-line">
@@ -38,7 +24,7 @@ export function TripCard({
             </svg>
           </span>
 
-          <em>{trip.duration}</em>
+          <em>{trip.departurePoint}</em>
 
           <span
             className="trip-route-segment trip-route-segment-right"
@@ -52,38 +38,17 @@ export function TripCard({
         </div>
 
         <div className="trip-point">
-          <strong>{trip.arrivalTime}</strong>
-          <span>
-            {isRouteReversed ? trip.from : trip.to}
-          </span>
+          <strong>{trip.destination}</strong>
+          <span>{trip.arrivalPoint}</span>
         </div>
       </div>
 
       <div className="trip-side">
         <div className="trip-price">
-          <strong>
-            {trip.priceLabel.replace(' EUR', '€')}
-          </strong>
+          <strong>{trip.contributionLabel}</strong>
           <span>
-            <i aria-hidden="true" /> {trip.seats} plaza
-            {trip.seats > 1 ? 's' : ''}
-          </span>
-        </div>
-
-        <div className="driver-summary">
-          <div>
-            <strong>{trip.driver}</strong>
-            <span>
-              <StarIcon />
-              {trip.rating}
-            </span>
-          </div>
-
-          <span className="driver-photo">
-            <img src={trip.driverAvatarUrl} alt="" />
-            {trip.verified && (
-              <i aria-label="Conductor verificado" />
-            )}
+            <i aria-hidden="true" /> {trip.availableSeats} plaza
+            {trip.availableSeats > 1 ? 's' : ''}
           </span>
         </div>
       </div>
