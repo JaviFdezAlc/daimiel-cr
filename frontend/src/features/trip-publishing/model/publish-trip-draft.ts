@@ -5,6 +5,7 @@ import {
 
 export const publishSteps = [
   'Ruta',
+  'Puntos',
   'Fecha',
   'Hora',
   'Plazas',
@@ -17,6 +18,8 @@ export type PublishStep = (typeof publishSteps)[number]
 export type PublishTripDraft = {
   origin: string
   destination: string
+  departurePoint: string
+  arrivalPoint: string
   date: string
   dateKey: string
   time: string
@@ -37,6 +40,8 @@ export function createInitialPublishTripDraft(
   return {
     origin: 'Daimiel',
     destination: 'Ciudad Real',
+    departurePoint: 'Daimiel centro',
+    arrivalPoint: 'Ciudad Real centro',
     date: getReadableDate(today),
     dateKey: getDateKey(today),
     time: '07:30',

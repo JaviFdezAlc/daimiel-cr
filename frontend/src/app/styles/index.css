@@ -2430,3 +2430,39 @@ svg {
     animation: none;
   }
 }
+
+.publish-points-step {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.publish-points-step label {
+  display: grid;
+  gap: 8px;
+  color: var(--green-900);
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.publish-points-step input {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid rgba(33, 61, 44, 0.2);
+  border-radius: 14px;
+  padding: 15px 16px;
+  background: rgba(255, 255, 255, 0.82);
+  color: var(--green-950);
+  font: inherit;
+  font-weight: 700;
+}
+
+.publish-points-step input::placeholder {
+  color: rgba(20, 38, 26, 0.42);
+}
+
+@media (max-width: 640px) {
+  .publish-points-step {
+    grid-template-columns: 1fr;
+  }
+}

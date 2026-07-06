@@ -15,7 +15,7 @@ export function PublishSummaryStep({
 
         <div className="review-route-line">
           <div className="review-place">
-            <small>Salida</small>
+            <small>Salida · {draft.departurePoint}</small>
             <strong>{draft.origin}</strong>
           </div>
 
@@ -28,7 +28,7 @@ export function PublishSummaryStep({
           </span>
 
           <div className="review-place">
-            <small>Llegada</small>
+            <small>Llegada · {draft.arrivalPoint}</small>
             <strong>{draft.destination}</strong>
           </div>
         </div>

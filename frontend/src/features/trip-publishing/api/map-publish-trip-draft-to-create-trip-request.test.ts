@@ -10,6 +10,8 @@ describe('mapPublishTripDraftToCreateTripRequest', () => {
     const result = mapPublishTripDraftToCreateTripRequest({
       origin: 'Daimiel',
       destination: 'Ciudad Real',
+      departurePoint: 'Estacion de Daimiel',
+      arrivalPoint: 'Campus Universitario',
       date: '5 julio',
       dateKey: '2026-07-05',
       time: '07:30',
@@ -30,8 +32,8 @@ describe('mapPublishTripDraftToCreateTripRequest', () => {
       ).toISOString(),
       totalSeats: 3,
       contributionAmount: 4.8,
-      departurePoint: 'Daimiel',
-      arrivalPoint: 'Ciudad Real',
+      departurePoint: 'Estacion de Daimiel',
+      arrivalPoint: 'Campus Universitario',
       comment: null,
     })
   })
@@ -41,6 +43,8 @@ describe('mapPublishTripDraftToCreateTripRequest', () => {
       mapPublishTripDraftToCreateTripRequest({
         origin: 'Madrid',
         destination: 'Ciudad Real',
+        departurePoint: 'Estacion de Daimiel',
+        arrivalPoint: 'Campus Universitario',
         date: '5 julio',
         dateKey: '2026-07-05',
         time: '07:30',
@@ -55,6 +59,8 @@ describe('mapPublishTripDraftToCreateTripRequest', () => {
       mapPublishTripDraftToCreateTripRequest({
         origin: 'Daimiel',
         destination: 'Daimiel',
+        departurePoint: 'Estacion de Daimiel',
+        arrivalPoint: 'Campus Universitario',
         date: '5 julio',
         dateKey: '2026-07-05',
         time: '07:30',
@@ -64,5 +70,21 @@ describe('mapPublishTripDraftToCreateTripRequest', () => {
     ).toThrow(
       'El origen y el destino deben ser distintos.',
     )
+  })
+
+  it('rechaza un punto de salida vacio', () => {
+    expect(() =>
+      mapPublishTripDraftToCreateTripRequest({
+        origin: 'Daimiel',
+        destination: 'Ciudad Real',
+        departurePoint: '   ',
+        arrivalPoint: 'Campus Universitario',
+        date: '5 julio',
+        dateKey: '2026-07-05',
+        time: '07:30',
+        seats: 2,
+        price: '4,00',
+      }),
+    ).toThrow('El punto de salida es obligatorio.')
   })
 })

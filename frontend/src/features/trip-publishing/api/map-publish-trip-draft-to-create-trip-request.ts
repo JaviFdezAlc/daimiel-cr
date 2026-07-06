@@ -68,6 +68,27 @@ function mapDepartureAt(
   return departureAt.toISOString()
 }
 
+function mapTripPoint(
+  point: string,
+  fieldName: string,
+): string {
+  const normalizedPoint = point.trim()
+
+  if (!normalizedPoint) {
+    throw new CreateTripRequestMappingError(
+      `El ${fieldName} es obligatorio.`,
+    )
+  }
+
+  if (normalizedPoint.length > 120) {
+    throw new CreateTripRequestMappingError(
+      `El ${fieldName} no puede superar los 120 caracteres.`,
+    )
+  }
+
+  return normalizedPoint
+}
+
 export function mapPublishTripDraftToCreateTripRequest(
   draft: PublishTripDraft,
 ): CreateTripRequest {
@@ -100,8 +121,14 @@ export function mapPublishTripDraftToCreateTripRequest(
     contributionAmount: mapContributionAmount(
       draft.price,
     ),
-    departurePoint: draft.origin.trim(),
-    arrivalPoint: draft.destination.trim(),
+    departurePoint: mapTripPoint(
+      draft.departurePoint,
+      'punto de salida',
+    ),
+    arrivalPoint: mapTripPoint(
+      draft.arrivalPoint,
+      'punto de llegada',
+    ),
     comment: null,
   }
 }

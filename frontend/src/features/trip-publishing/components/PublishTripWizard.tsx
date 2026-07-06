@@ -6,6 +6,7 @@ import { usePublishTripSubmission } from '../hooks/usePublishTripSubmission'
 import { usePublishTripWizard } from '../hooks/usePublishTripWizard'
 import { publishSteps } from '../model/publish-trip-draft'
 import { PublishDateStep } from './PublishDateStep'
+import { PublishPointsStep } from './PublishPointsStep'
 import { PublishPriceStep } from './PublishPriceStep'
 import { PublishRouteStep } from './PublishRouteStep'
 import { PublishSeatsStep } from './PublishSeatsStep'
@@ -115,6 +116,16 @@ export function PublishTripWizard({
               </div>
 
               <div>
+                <span>Salida</span>
+                <strong>{publishDraft.departurePoint}</strong>
+              </div>
+
+              <div>
+                <span>Llegada</span>
+                <strong>{publishDraft.arrivalPoint}</strong>
+              </div>
+
+              <div>
                 <span>Fecha y hora</span>
                 <strong>
                   {publishDraft.date}, {publishDraft.time}
@@ -166,6 +177,8 @@ export function PublishTripWizard({
                 <h2>
                   {currentPublishStep === 'Ruta' &&
                     'Define la ruta del viaje'}
+                  {currentPublishStep === 'Puntos' &&
+                    'Indica los puntos del trayecto'}
                   {currentPublishStep === 'Fecha' &&
                     'Elige el dia de salida'}
                   {currentPublishStep === 'Hora' &&
@@ -181,6 +194,8 @@ export function PublishTripWizard({
                 <p>
                   {currentPublishStep === 'Ruta' &&
                     'Usa la ruta habitual o ajustala antes de continuar.'}
+                  {currentPublishStep === 'Puntos' &&
+                    'Especifica desde donde sales y donde dejas a los pasajeros.'}
                   {currentPublishStep === 'Hora' &&
                     'Selecciona la hora de salida.'}
                   {currentPublishStep === 'Plazas' &&
@@ -204,6 +219,25 @@ export function PublishTripWizard({
                       updatePublishDraft('destination', destination)
                     }
                     onSwapRoute={swapRoute}
+                  />
+                )}
+
+                {currentPublishStep === 'Puntos' && (
+                  <PublishPointsStep
+                    departurePoint={publishDraft.departurePoint}
+                    arrivalPoint={publishDraft.arrivalPoint}
+                    onDeparturePointChange={(departurePoint) =>
+                      updatePublishDraft(
+                        'departurePoint',
+                        departurePoint,
+                      )
+                    }
+                    onArrivalPointChange={(arrivalPoint) =>
+                      updatePublishDraft(
+                        'arrivalPoint',
+                        arrivalPoint,
+                      )
+                    }
                   />
                 )}
 

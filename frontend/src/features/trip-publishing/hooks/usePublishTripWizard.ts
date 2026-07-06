@@ -64,6 +64,8 @@ export function usePublishTripWizard({ today }: UsePublishTripWizardParams) {
       ...currentDraft,
       origin: currentDraft.destination,
       destination: currentDraft.origin,
+      departurePoint: currentDraft.arrivalPoint,
+      arrivalPoint: currentDraft.departurePoint,
     }));
   };
 
