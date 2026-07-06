@@ -18,7 +18,6 @@ type UsePublishTripWizardParams = {
 export function usePublishTripWizard({ today }: UsePublishTripWizardParams) {
   const calendarMinMonth = new Date(today.getFullYear(), today.getMonth(), 1);
   const [publishStep, setPublishStep] = useState(0);
-  const [isPublishComplete, setIsPublishComplete] = useState(false);
   const [publishDraft, setPublishDraft] = useState(() =>
     createInitialPublishTripDraft(today),
   );
@@ -50,7 +49,6 @@ export function usePublishTripWizard({ today }: UsePublishTripWizardParams) {
       ...currentDraft,
       [key]: value,
     }));
-    setIsPublishComplete(false);
   };
 
   const selectPublishDate = (dateKey: string, dateLabel: string) => {
@@ -59,8 +57,6 @@ export function usePublishTripWizard({ today }: UsePublishTripWizardParams) {
       date: dateLabel,
       dateKey,
     }));
-
-    setIsPublishComplete(false);
   };
 
   const swapRoute = () => {
@@ -69,30 +65,21 @@ export function usePublishTripWizard({ today }: UsePublishTripWizardParams) {
       origin: currentDraft.destination,
       destination: currentDraft.origin,
     }));
-
-    setIsPublishComplete(false);
   };
 
   const goToNextPublishStep = () => {
-    if (isPublishSummaryStep) {
-      setIsPublishComplete(true);
-      return;
-    }
-
     setPublishStep((currentStep) =>
       Math.min(currentStep + 1, publishSteps.length - 1),
     );
   };
 
   const goToPreviousPublishStep = () => {
-    setIsPublishComplete(false);
     setPublishStep((currentStep) => Math.max(currentStep - 1, 0));
   };
 
   const resetPublishWizard = () => {
     setPublishDraft(createInitialPublishTripDraft(today));
     setPublishStep(0);
-    setIsPublishComplete(false);
     setCalendarCursor(new Date(calendarMinMonth));
   };
 
@@ -106,7 +93,6 @@ export function usePublishTripWizard({ today }: UsePublishTripWizardParams) {
 
   return {
     publishStep,
-    isPublishComplete,
     publishDraft,
     currentPublishStep,
     isPublishSummaryStep,

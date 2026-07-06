@@ -2,6 +2,7 @@ import type { CSSProperties } from 'react'
 
 import { ArrowIcon } from '../../../shared/icons/ArrowIcon'
 import { getDateKey } from '../../../shared/lib/date'
+import { usePublishTripSubmission } from '../hooks/usePublishTripSubmission'
 import { usePublishTripWizard } from '../hooks/usePublishTripWizard'
 import { publishSteps } from '../model/publish-trip-draft'
 import { PublishDateStep } from './PublishDateStep'
@@ -26,7 +27,6 @@ export function PublishTripWizard({
 
   const {
     publishStep,
-    isPublishComplete,
     publishDraft,
     currentPublishStep,
     isPublishSummaryStep,
@@ -43,6 +43,47 @@ export function PublishTripWizard({
     goToNextCalendarMonth,
   } = usePublishTripWizard({ today })
 
+  const {
+    isSubmitting,
+    isPublished,
+    errorMessage,
+    createdTripId,
+    publishTrip,
+    clearError,
+    resetSubmission,
+  } = usePublishTripSubmission()
+
+  const demoDriverId =
+    import.meta.env.VITE_DEMO_DRIVER_ID ?? ''
+
+  const resetPublishFlow = () => {
+    resetPublishWizard()
+    resetSubmission()
+  }
+
+  const handleReturnHome = () => {
+    resetPublishFlow()
+    onReturnHome()
+  }
+
+  const handlePreviousStep = () => {
+    clearError()
+    goToPreviousPublishStep()
+  }
+
+  const handlePrimaryAction = () => {
+    if (!isPublishSummaryStep) {
+      clearError()
+      goToNextPublishStep()
+      return
+    }
+
+    void publishTrip({
+      draft: publishDraft,
+      driverId: demoDriverId,
+    })
+  }
+
   return (
     <section
       className="publish-view"
@@ -50,18 +91,18 @@ export function PublishTripWizard({
       aria-hidden={!isVisible}
     >
       <div className="publish-card">
-        {isPublishComplete ? (
-          <div className="publish-success">
+        {isPublished ? (
+          <div className="publish-success" role="status">
             <span className="publish-kicker">
-              Viaje preparado
+              Viaje publicado
             </span>
 
-            <h2>Tu salida esta lista para publicarse</h2>
+            <h2>Tu salida ya esta publicada</h2>
 
             <p>
-              Hemos guardado el borrador de {publishDraft.origin} a{' '}
-              {publishDraft.destination}. En una version real aqui se
-              enviaria al backend.
+              Tu viaje de {publishDraft.origin} a{' '}
+              {publishDraft.destination} ya aparece disponible
+              para los pasajeros.
             </p>
 
             <div className="publish-summary-card">
@@ -89,13 +130,18 @@ export function PublishTripWizard({
                 <span>Precio</span>
                 <strong>{publishDraft.price} EUR</strong>
               </div>
+
+              <div>
+                <span>Referencia</span>
+                <strong>{createdTripId}</strong>
+              </div>
             </div>
 
             <div className="publish-actions">
               <button
                 className="secondary-link"
                 type="button"
-                onClick={resetPublishWizard}
+                onClick={resetPublishFlow}
               >
                 Crear otro viaje
               </button>
@@ -103,7 +149,7 @@ export function PublishTripWizard({
               <button
                 className="primary-link"
                 type="button"
-                onClick={onReturnHome}
+                onClick={handleReturnHome}
               >
                 Volver al inicio
               </button>
@@ -209,12 +255,18 @@ export function PublishTripWizard({
               </div>
             </div>
 
+            {errorMessage && (
+              <p role="alert" className="publish-error">
+                {errorMessage}
+              </p>
+            )}
+
             <div className="publish-actions">
               <button
                 className="secondary-link"
                 type="button"
-                onClick={goToPreviousPublishStep}
-                disabled={publishStep === 0}
+                onClick={handlePreviousStep}
+                disabled={publishStep === 0 || isSubmitting}
               >
                 Atras
               </button>
@@ -222,12 +274,15 @@ export function PublishTripWizard({
               <button
                 className="primary-link"
                 type="button"
-                onClick={goToNextPublishStep}
+                onClick={handlePrimaryAction}
+                disabled={isSubmitting}
               >
-                {isPublishSummaryStep
-                  ? 'Publicar viaje'
-                  : 'Continuar'}
-                <ArrowIcon />
+                {isSubmitting
+                  ? 'Publicando...'
+                  : isPublishSummaryStep
+                    ? 'Publicar viaje'
+                    : 'Continuar'}
+                {!isSubmitting && <ArrowIcon />}
               </button>
             </div>
 
