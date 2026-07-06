@@ -1,6 +1,6 @@
-export type TripLocationResponse =
-  | 'DAIMIEL'
-  | 'CIUDAD_REAL'
+import type { TripLocation } from '../../../shared/model/trip-location'
+
+export type TripLocationResponse = TripLocation
 
 export type TripSummaryResponse = {
   id: string
